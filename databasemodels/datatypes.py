@@ -21,6 +21,8 @@ __all__ = [
     'NoInsert',
     'NotNull',
     'EnumType',
+    'AUTO_FILLED',
+    'NO_DEFAULT',
     'INTEGER',
     'SERIAL',
     'REAL',
@@ -48,7 +50,7 @@ class DatabaseModel(Dataclass, Protocol):
     __column_definitions__: OrderedDict[str, 'Column']
     __primary_key__: Optional['Column']
 
-    __schema__: str
+    __schema_name__: str
     __table_name__: str
 
     @staticmethod
@@ -148,9 +150,9 @@ class ForeignKey(ColumnType):
     def __class_getitem__(cls, key: TABLE_OR_TABLE_COLUMN) -> 'ForeignKey':
         if isinstance(key, DatabaseModel):
             if key.__primary_key__ is None:
-                raise ValueError(f'{key} contains no primary key')
-            return cls(key.__schema__, key.__table_name__, key.__primary_key__)
-        return cls(key[0].__schema__, key[0].__table_name__, key[0].getColumn(key[1]))
+                raise TypeError(f'{key} contains no primary key')
+            return cls(key.__schema_name__, key.__table_name__, key.__primary_key__)
+        return cls(key[0].__schema_name__, key[0].__table_name__, key[0].getColumn(key[1]))
 
     def initializeType(self, conn: 'connection.Connection[Any]') -> None:
         pass
@@ -189,6 +191,14 @@ class ModifiedColumnType(ColumnType, ABC):
     @property
     def rawType(self) -> str:
         return self.type.rawType
+
+    @property
+    def includeInsert(self) -> bool:
+        return self.type.includeInsert
+
+    @property
+    def primary(self) -> bool:
+        return self.type.primary
 
     def __str__(self) -> str:
         return str(self.type)
@@ -291,6 +301,18 @@ class Serial(LiteralType):
     @property
     def rawType(self) -> str:
         return 'INTEGER'
+
+
+class SentinelValue:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def __repr__(self) -> str:
+        return self.name
+
+
+AUTO_FILLED = SentinelValue('AUTO_FILLED')
+NO_DEFAULT = SentinelValue('NO_DEFAULT')
 
 
 INTEGER = LiteralType('INTEGER')
