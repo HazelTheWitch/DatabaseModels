@@ -134,7 +134,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                     if recreateTable:
                         cur.execute(sql.SQL('DROP TABLE IF EXISTS {} CASCADE').format(
-                            sql.Identifier(tableName)
+                            sql.Identifier(schemaName, tableName)
                         ))
 
                     cur.execute(createTable)
