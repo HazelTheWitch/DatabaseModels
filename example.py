@@ -1,24 +1,22 @@
 import pickle
 
-import databasemodels as dbms
+import databasemodels as dbm
 from databasemodels.datatypes import *
 from dataclasses import dataclass
 from psycopg import connect
 
-import inspect
 
-
-@dbms.model('example', 'people')
+@dbm.model('example', 'people')
 @dataclass()
 class Person:
-    name: NotNull[TEXT]
+    name: NotNull[TEXT] = NO_DEFAULT
     id: PrimaryKey[SERIAL] = AUTO_FILLED
-    gender: NotNull[EnumType('gender', 'male', 'female', 'nonbinary')] = NO_DEFAULT
-    age: NoInsert[INTEGER] = NO_DEFAULT
+    gender: NotNull[EnumType('gender', ('male', 'female', 'nonbinary'))] = NO_DEFAULT
+    age: INTEGER = NO_DEFAULT
     favoriteNumber: INTEGER = NO_DEFAULT
 
 
-@dbms.model('example', 'orders')
+@dbm.model('example', 'orders')
 @dataclass()
 class Order:
     id: PrimaryKey[SERIAL] = AUTO_FILLED
@@ -26,21 +24,52 @@ class Order:
     quantity: INTEGER = NO_DEFAULT
 
 
-with open('login.pkl', 'rb') as f:
-    login = pickle.load(f)
-
-conn = connect(**login)
+conn = dbm.createOrLoadConnection('login.pkl')
 
 with conn:
-    print(inspect.signature(Person))
-    print(inspect.signature(Order))
-
     Person.createTable(conn)
     Order.createTable(conn)
 
     p0 = Person('Hazel', 'female', 20, None)
-    p1 = Person('Hunter', 'male', 20, 3)
+    p1 = Person('Hunter', 'male', 20, '3')
 
-    print(p0, p1)
+    o0 = Order(p0, 3)
+
+    print('Original Objects')
+    print(p0, p1, o0, sep='\n')
+    print()
+
+    with conn.cursor() as cur:
+        cur.execute('DELETE FROM example.orders;')
+        cur.execute('DELETE FROM example.people;')
+
+    o0.insert(conn)
+
+    # p0.insert(conn)
+    p1.insert(conn)
+
+    print('Retrieved from Database')
+    print(*Person.instatiateAll(conn), sep='\n')
+    print(*Order.instatiateAll(conn))
+    print()
+
+    print('Original Objects')
+    print(p0, p1, o0, sep='\n')
+    print()
+
+    p0.favoriteNumber = 17
+    p1.age = 21
+
+    o0.quantity = 5
+
+    p0.update(conn)
+    p1.update(conn)
+
+    o0.update(conn)
+
+    print('Retrieved from Database')
+    print(*Person.instatiateAll(conn), sep='\n')
+    print(*Order.instatiateAll(conn))
+    print()
 
 conn.close()
