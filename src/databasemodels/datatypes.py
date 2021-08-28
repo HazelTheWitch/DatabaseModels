@@ -391,22 +391,24 @@ class EnumType(ColumnType):
         return self.type
 
 
-class Serial(LiteralType):
-    def __init__(self) -> None:
-        super().__init__('SERIAL', int, int)
+class PseudoType(LiteralType):
+    def __init__(self, name: str, rawName: str, converter: Callable[[str], Any], inverse: Callable[[Any], Any]) -> None:
+        super().__init__(name, converter, inverse)
+
+        self.rawName = rawName
 
     @property
     def rawType(self) -> str:
-        return 'INTEGER'
+        return self.rawName
 
 
 INTEGER = LiteralType('INTEGER', int, int)
-SERIAL = Serial()
+SERIAL = PseudoType('SERIAL', 'INTEGER', int, int)
 REAL = LiteralType('DOUBLE PRECISION', float, float)
 
 TEXT = LiteralType('TEXT', str, str)
 
-# TODO: Fill out placeholder converters
+
 TIMESTAMP = LiteralType('TIMESTAMP', datetime.datetime.fromisoformat, lambda t: t.isoformat())
 TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', datetime.datetime.fromisoformat, lambda t: t.isoformat())
 DATE = LiteralType('DATE', datetime.date.fromisoformat, lambda t: t.isoformat())
