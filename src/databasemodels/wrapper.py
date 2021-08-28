@@ -80,6 +80,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 dictlike = ', '.join(f'{a}={getattr(self, a)}' for a in self.__column_definitions__.keys())
                 return f'{self.__schema_name__}.{self.__table_name__}({dictlike})'
 
+            def __dir__(self) -> List[str]:
+                return list(set(dir(type(self)) + list(self.__dict__.keys())))
+
             @classmethod
             def getColumn(cls, name: str) -> 'Column':
                 return cls.__column_definitions__[name]
@@ -260,7 +263,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         WrappedClass.__module__ = cls.__module__
         WrappedClass.__name__ = cls.__name__
         WrappedClass.__qualname__ = cls.__qualname__
-        WrappedClass.__annotations__ = cls.__annotations__
+        WrappedClass.__annotations__.update(cls.__annotations__)
         WrappedClass.__doc__ = cls.__doc__
 
         # WrappedClass is of type Type['DatabaseModel'] but type checker does not see that in PyCharm
