@@ -66,7 +66,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             __schema_name__: str = schemaName
             __table_name__: str = tableName
 
-            def _create(self, conn: 'connection.Connection', record: Tuple[str, ...]) -> None:
+            def _create(self, conn: 'connection.Connection[Any]', record: Tuple[str, ...]) -> None:
                 kwargs = {}
 
                 for kc, v in zip(WrappedClass.__column_definitions__.items(), record):
@@ -74,10 +74,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     kwargs[k] = c.type.convertDataFromString(conn, v)
 
                 for k, v in kwargs.items():
-                    if v is AUTO_FILLED:
-                        setattr(self, k, None)
-                    else:
-                        setattr(self, k, v)
+                    setattr(self, k, v)
 
             def __str__(self) -> str:
                 dictlike = ', '.join(f'{a}={getattr(self, a)}' for a in self.__column_definitions__.keys())
@@ -92,8 +89,11 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 return WrappedClass.__primary_key__
 
             @property
-            def primaryKeyValue(self) -> Any:
-                return getattr(self, self.primaryKey.name)
+            def primaryKeyValue(self) -> Optional[Any]:
+                primary = self.primaryKey
+                if primary is None:
+                    return None
+                return getattr(self, primary.name)
 
             @property
             def schema(self) -> str:
@@ -202,7 +202,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     # After insertion of this object go back and fill in any defaulted fields
                     record = cur.fetchone()
 
-                    self._create(conn, record[0])
+                    self._create(conn, cast(Tuple[Tuple[Any, ...]], record)[0])
 
             def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
                 primary = self.primaryKey
@@ -224,7 +224,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     sql.SQL(', ').join(
                         list(map(sql.Literal, data))
                     ),
-                    sql.Identifier(self.primaryKey.name),
+                    sql.Identifier(primary.name),
                     sql.Literal(self.primaryKeyValue)
                 )
 
@@ -232,6 +232,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     cur.execute(updateStatement)
 
             def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+                if self.primaryKey is None:
+                    raise TypeError(f'{self} does not contain a primary key')
+
                 if self.primaryKeyValue is None:
                     self.insert(conn, doTypeConversion=doTypeConversion)
 

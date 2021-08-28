@@ -5,7 +5,7 @@ from dataclasses import Field
 from psycopg import sql
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, List, Union, Tuple, Optional, OrderedDict, \
-    Callable, cast
+    Callable, cast, Generator
 
 from .helper import acceptNone
 
@@ -77,11 +77,11 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @staticmethod
-    def instatiateAll(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['WrappedClass', ...]:
+    def instatiateAll(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['DatabaseModel', ...]:
         ...
 
     @staticmethod
-    def instatiate(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> List['DatabaseModel']:
+    def instatiate(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
         ...
 
     def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
@@ -166,7 +166,7 @@ class ColumnType(ABC):
         ...
 
     @abstractmethod
-    def convertDataFromString(self, conn: 'connection.Connection', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
         """
         Convert string retrieved from the database to a Python object representation.
         Should be the inverse of convertInsertableFromData.
@@ -180,7 +180,7 @@ class ColumnType(ABC):
         """
         ...
 
-    def convertInsertableFromData(self, conn: 'connection.Connection', data: Any) -> Any:
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         """
         Convert a Python object representation to something insertable by psycopg.
         Should be the inverse of convertDataFromString.
@@ -230,13 +230,19 @@ class ForeignKey(ColumnType):
             sql.SQL(self.column.name)
         )
 
-    def convertDataFromString(self, conn: 'connection.Connection', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+        if self.model.__primary_key__ is None:
+            raise TypeError(f'{self.model} contains no primary key')
+
         return self.model.instatiateAll(conn, sql.SQL('WHERE {} = {}').format(
             sql.Identifier(self.model.__primary_key__.name),
             sql.Literal(string)
         ))[0]
 
-    def convertInsertableFromData(self, conn: 'connection.Connection', data: Any) -> Any:
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
+        if self.model.__primary_key__ is None:
+            raise TypeError(f'{self.model} contains no primary key')
+
         # Data will be of type self.model so we can get the primary key of data and return it
         data.insertOrUpdate(conn)
         
@@ -268,10 +274,10 @@ class ModifiedColumnType(ColumnType, ABC):
     def primary(self) -> bool:
         return self.type.primary
 
-    def convertDataFromString(self, conn: 'connection.Connection', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
         return self.type.convertDataFromString(conn, string)
 
-    def convertInsertableFromData(self, conn: 'connection.Connection', data: Any) -> Any:
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         return self.type.convertInsertableFromData(conn, data)
 
     def __str__(self) -> str:
@@ -283,7 +289,7 @@ class NotNull(ModifiedColumnType):
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL('{} NOT NULL').format(self.type.typeStatement)
 
-    def convertInsertableFromData(self, conn: 'connection.Connection', data: Any) -> Any:
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if data is None:
             raise TypeError('Attempted to fill not null field with null')
         return super().convertInsertableFromData(conn, data)
@@ -331,10 +337,10 @@ class LiteralType(ColumnType):
     def rawType(self) -> str:
         return self.type
 
-    def convertDataFromString(self, conn: 'connection.Connection', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
         return self.converter(string)
 
-    def convertInsertableFromData(self, conn: 'connection.Connection', data: Any) -> Any:
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         return self.inverse(data)
 
     def __str__(self) -> str:
@@ -368,10 +374,10 @@ class EnumType(ColumnType):
     def rawType(self) -> str:
         return self.type
 
-    def convertDataFromString(self, conn: 'connection.Connection', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
         return string
 
-    def convertInsertableFromData(self, conn: 'connection.Connection', data: Any) -> Any:
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         strData = str(data)
 
         if strData is not None and strData not in self.enums:

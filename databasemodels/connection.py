@@ -1,6 +1,6 @@
 import pickle
 
-from typing import Union, TYPE_CHECKING, TypedDict, Optional, Callable
+from typing import Union, TYPE_CHECKING, TypedDict, Optional, Callable, Any, cast
 from pathlib import Path
 from psycopg import connect
 
@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 
-PATH_LIKE = Union[str, bytes, PathLike, 'Path']
+PATH_LIKE = Union[Union[str, PathLike[str]], 'Path']
 
 
 class Login(TypedDict):
@@ -32,6 +32,12 @@ class Login(TypedDict):
     password: str
     host: str
     port: int
+
+
+def processPath(pathlike: PATH_LIKE) -> 'Path':
+    if isinstance(pathlike, Path):
+        return pathlike
+    return Path(pathlike)
 
 
 def prompt(prompt: str, default: Optional[str] = None) -> str:
@@ -45,20 +51,20 @@ def prompt(prompt: str, default: Optional[str] = None) -> str:
         return input(f'{prompt}: ')
 
 
-def connectWithLogin(login: Login) -> 'connection.Connection':
+def connectWithLogin(login: Login) -> 'connection.Connection[Any]':
     return connect(**login)
 
 
-def connectUsingLoginFunc(func: Callable[[PATH_LIKE], Login]) -> Callable[[PATH_LIKE], 'connection.Connection']:
+def connectUsingLoginFunc(func: Callable[[PATH_LIKE], Login]) -> Callable[[PATH_LIKE], 'connection.Connection[Any]']:
     @wraps(func)
-    def wrapper(filePath: PATH_LIKE) -> 'connection.Connection':
+    def wrapper(filePath: PATH_LIKE) -> 'connection.Connection[Any]':
         return connectWithLogin(func(filePath))
 
     return wrapper
 
 
 def createLogin(filePath: PATH_LIKE) -> Login:
-    path = Path(filePath)
+    path = processPath(filePath)
 
     login = dict(
         dbname=prompt('Database Name'),
@@ -71,18 +77,18 @@ def createLogin(filePath: PATH_LIKE) -> Login:
     with path.open('wb') as loginFile:
         pickle.dump(login, loginFile)
 
-    return login
+    return cast(Login, login)
 
 
 def loadLogin(filePath: PATH_LIKE) -> Login:
-    path = Path(filePath)
+    path = processPath(filePath)
 
     with path.open('rb') as loginFile:
-        return pickle.load(loginFile)
+        return cast(Login, pickle.load(loginFile))
 
 
 def createOrLoadLogin(filePath: PATH_LIKE) -> Login:
-    path = Path(filePath)
+    path = processPath(filePath)
 
     if path.exists():
         return loadLogin(filePath)
