@@ -5,7 +5,9 @@ from dataclasses import Field
 from psycopg import sql
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, List, Union, Tuple, Optional, OrderedDict, \
-    Callable, cast, Generator
+    Callable, Generator
+
+import datetime
 
 from .helper import acceptNone
 
@@ -36,7 +38,7 @@ __all__ = [
     'DATE',
     'TIME',
     'TIME_WITH_TIMEZONE',
-    'INTERVAL',
+    # 'INTERVAL',
     'BOOL',
     'VARCHAR',
     'CHAR',
@@ -405,12 +407,12 @@ REAL = LiteralType('DOUBLE PRECISION', float, float)
 TEXT = LiteralType('TEXT', str, str)
 
 # TODO: Fill out placeholder converters
-TIMESTAMP = LiteralType('TIMESTAMP', str, str)
-TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', str, str)
-DATE = LiteralType('DATE', str, str)
-TIME = LiteralType('TIME', str, str)
-TIME_WITH_TIMEZONE = LiteralType('TIME WITH TIME ZONE', str, str)
-INTERVAL = LiteralType('INTERVAL', str, str)
+TIMESTAMP = LiteralType('TIMESTAMP', datetime.datetime.fromisoformat, lambda t: t.isoformat())
+TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', datetime.datetime.fromisoformat, lambda t: t.isoformat())
+DATE = LiteralType('DATE', datetime.date.fromisoformat, lambda t: t.isoformat())
+TIME = LiteralType('TIME', datetime.time.fromisoformat, lambda t: t.isoformat())
+TIME_WITH_TIMEZONE = LiteralType('TIME WITH TIME ZONE', datetime.time.fromisoformat, lambda t: t.isoformat())
+# INTERVAL = LiteralType('INTERVAL', str, str)
 
 BOOL = LiteralType('BOOLEAN', bool, bool)
 

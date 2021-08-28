@@ -3,7 +3,7 @@ import pickle
 import databasemodels as dbm
 from databasemodels.datatypes import *
 from dataclasses import dataclass
-from psycopg import connect
+from datetime import datetime
 
 
 @dbm.model('example', 'people')
@@ -22,31 +22,28 @@ class Order:
     id: PrimaryKey[SERIAL] = AUTO_FILLED
     customerID: ForeignKey[Person, 'id'] = NO_DEFAULT
     quantity: INTEGER = NO_DEFAULT
+    orderedAt: TIMESTAMP = NO_DEFAULT
 
 
 conn = dbm.createOrLoadConnection('login.pkl')
 
 with conn:
-    Person.createTable(conn)
-    Order.createTable(conn)
+    Person.createTable(conn, recreateTable=True)
+    Order.createTable(conn, recreateTable=True)
 
     p0 = Person('Hazel', 'female', 20, None)
     p1 = Person('Hunter', 'male', 20, '3')
 
-    o0 = Order(p0, 3)
+    o0 = Order(p0, 3, datetime.now())
 
     print('Original Objects')
     print(p0, p1, o0, sep='\n')
     print()
 
-    with conn.cursor() as cur:
-        cur.execute('DELETE FROM example.orders;')
-        cur.execute('DELETE FROM example.people;')
+    o0.insertOrUpdate(conn)
 
-    o0.insert(conn)
-
-    # p0.insert(conn)
-    p1.insert(conn)
+    p0.insertOrUpdate(conn)
+    p1.insertOrUpdate(conn)
 
     print('Retrieved from Database')
     print(*Person.instatiateAll(conn), sep='\n')
