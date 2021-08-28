@@ -5,7 +5,7 @@ from dataclasses import Field
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, Union, Tuple, Optional, OrderedDict, \
     Callable, Generator
 
-import iso8601
+from iso8601 import parse_date
 
 from psycopg import sql
 
@@ -408,8 +408,8 @@ REAL = LiteralType('DOUBLE PRECISION', float, float)
 TEXT = LiteralType('TEXT', str, str)
 
 
-TIMESTAMP = LiteralType('TIMESTAMP', iso8601.parse_date, lambda t: t.isoformat())
-TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', iso8601.parse_date, lambda t: t.isoformat())
+TIMESTAMP = LiteralType('TIMESTAMP', parse_date, lambda t: t.isoformat())
+TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', parse_date, lambda t: t.isoformat())
 DATE = LiteralType('DATE', datetime.date.fromisoformat, lambda t: t.isoformat())
 TIME = LiteralType('TIME', datetime.time.fromisoformat, lambda t: t.isoformat())
 # INTERVAL = LiteralType('INTERVAL', str, str)
