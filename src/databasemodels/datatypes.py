@@ -1,13 +1,13 @@
+import datetime
 import re
-
-from dataclasses import Field
-
-from psycopg import sql
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, List, Union, Tuple, Optional, OrderedDict, \
+from dataclasses import Field
+from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, Union, Tuple, Optional, OrderedDict, \
     Callable, Generator
 
-import datetime
+import iso8601
+
+from psycopg import sql
 
 from .helper import acceptNone
 
@@ -37,7 +37,6 @@ __all__ = [
     'TIMESTAMP_WITH_TIMEZONE',
     'DATE',
     'TIME',
-    'TIME_WITH_TIMEZONE',
     # 'INTERVAL',
     'BOOL',
     'VARCHAR',
@@ -409,14 +408,13 @@ REAL = LiteralType('DOUBLE PRECISION', float, float)
 TEXT = LiteralType('TEXT', str, str)
 
 
-TIMESTAMP = LiteralType('TIMESTAMP', datetime.datetime.fromisoformat, lambda t: t.isoformat())
-TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', datetime.datetime.fromisoformat, lambda t: t.isoformat())
+TIMESTAMP = LiteralType('TIMESTAMP', iso8601.parse_date, lambda t: t.isoformat())
+TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', iso8601.parse_date, lambda t: t.isoformat())
 DATE = LiteralType('DATE', datetime.date.fromisoformat, lambda t: t.isoformat())
 TIME = LiteralType('TIME', datetime.time.fromisoformat, lambda t: t.isoformat())
-TIME_WITH_TIMEZONE = LiteralType('TIME WITH TIME ZONE', datetime.time.fromisoformat, lambda t: t.isoformat())
 # INTERVAL = LiteralType('INTERVAL', str, str)
 
-BOOL = LiteralType('BOOLEAN', bool, bool)
+BOOL = LiteralType('BOOLEAN', lambda s: s == 't', bool)
 
 
 def VARCHAR(n: int) -> 'LiteralType':

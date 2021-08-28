@@ -66,8 +66,15 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             __schema_name__: str = schemaName
             __table_name__: str = tableName
 
-            def _create(self, conn: 'connection.Connection[Any]', record: Tuple[str, ...]) -> None:
+            def _create(self, conn: 'connection.Connection[Any]', record: Union[Any, Tuple[Any, ...]]) -> None:
                 kwargs = {}
+
+                if type(record) != tuple:
+                    record = (record,)
+
+                record = tuple(str(r) for r in record)
+
+                record = cast(Tuple[str, ...], record)
 
                 for kc, v in zip(WrappedClass.__column_definitions__.items(), record):
                     k, c = kc

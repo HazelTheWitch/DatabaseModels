@@ -21,55 +21,55 @@ class Order:
     customerID: ForeignKey[Person, 'id'] = NO_DEFAULT
     quantity: INTEGER = NO_DEFAULT
     orderedAt: TIMESTAMP = NO_DEFAULT
+    fulfilled: BOOL = NO_DEFAULT
 
 
 conn = dbm.createOrLoadConnection('login.pkl')
 
 with conn:
-    Person.createTable(conn, recreateTable=True)
-    Order.createTable(conn, recreateTable=True)
+    with conn.transaction() as tx:
+        Person.createTable(conn, recreateTable=True)
+        Order.createTable(conn, recreateTable=True)
 
-    p0 = Person('Hazel', 'female', 20, None)
-    p1 = Person('Hunter', 'male', 20, '3')
-    p2 = Person('Dacota', 'nonbinary', 19, 32)
+        p0 = Person('Hazel', 'female', 20, None)
+        p1 = Person('Hunter', 'male', 20, '3')
+        p2 = Person('Dacota', 'nonbinary', 19, 32)
 
-    o0 = Order(p0, 3, datetime.now())
+        o0 = Order(p0, 3, datetime.now(), False)
 
-    print('Original Objects')
-    print(p0, p1, p2, o0, sep='\n')
-    print()
+        print('Original Objects')
+        print(p0, p1, p2, o0, sep='\n')
+        print()
 
-    o0.insertOrUpdate(conn)
+        o0.insertOrUpdate(conn)
 
-    p0.insertOrUpdate(conn)
-    p1.insertOrUpdate(conn)
-    p2.insertOrUpdate(conn)
+        p0.insertOrUpdate(conn)
+        p1.insertOrUpdate(conn)
+        p2.insertOrUpdate(conn)
 
-    print('Retrieved from Database')
-    print(*Person.instatiateAll(conn), sep='\n')
-    print(*Order.instatiateAll(conn))
-    print()
+        print('Retrieved from Database')
+        print(*Person.instatiateAll(conn), sep='\n')
+        print(*Order.instatiateAll(conn))
+        print()
 
-    print('Original Objects')
-    print(p0, p1, p2, o0, sep='\n')
-    print()
+        print('Original Objects')
+        print(p0, p1, p2, o0, sep='\n')
+        print()
 
-    p0.favoriteNumber = 17
-    p1.age = 21
+        p0.favoriteNumber = 17
+        p1.age = 21
 
-    p2.age = 20
+        p2.age = 20
 
-    o0.quantity = 5
+        o0.fulfilled = True
 
-    p0.update(conn)
-    p1.update(conn)
-    p2.update(conn)
+        p0.update(conn)
+        p1.update(conn)
+        p2.update(conn)
 
-    o0.update(conn)
+        o0.update(conn)
 
-    print('Retrieved from Database')
-    print(*Person.instatiateAll(conn), sep='\n')
-    print(*Order.instatiateAll(conn))
-    print()
-
-conn.close()
+        print('Retrieved from Database')
+        print(*Person.instatiateAll(conn), sep='\n')
+        print(*Order.instatiateAll(conn))
+        print()
