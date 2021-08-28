@@ -13,7 +13,8 @@ setup(
     description=shortDescription,
     long_description=description,
     long_description_content_type='text/markdown',
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     python_requires='>=3.9',
     install_requires=[
         'psycopg',

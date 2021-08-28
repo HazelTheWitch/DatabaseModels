@@ -1,8 +1,8 @@
 import unittest
 from dataclasses import dataclass
 
-import databasemodels as dbm
-from databasemodels.datatypes import *
+from src import databasemodels as dbm
+from src.databasemodels.datatypes import *
 
 
 class ConnectionUnitTest(unittest.TestCase):
