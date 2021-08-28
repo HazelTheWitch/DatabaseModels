@@ -33,17 +33,19 @@ with conn:
 
     p0 = Person('Hazel', 'female', 20, None)
     p1 = Person('Hunter', 'male', 20, '3')
+    p2 = Person('Dacota', 'nonbinary', 19, 32)
 
     o0 = Order(p0, 3, datetime.now())
 
     print('Original Objects')
-    print(p0, p1, o0, sep='\n')
+    print(p0, p1, p2, o0, sep='\n')
     print()
 
     o0.insertOrUpdate(conn)
 
     p0.insertOrUpdate(conn)
     p1.insertOrUpdate(conn)
+    p2.insertOrUpdate(conn)
 
     print('Retrieved from Database')
     print(*Person.instatiateAll(conn), sep='\n')
@@ -51,16 +53,19 @@ with conn:
     print()
 
     print('Original Objects')
-    print(p0, p1, o0, sep='\n')
+    print(p0, p1, p2, o0, sep='\n')
     print()
 
     p0.favoriteNumber = 17
     p1.age = 21
 
+    p2.age = 20
+
     o0.quantity = 5
 
     p0.update(conn)
     p1.update(conn)
+    p2.update(conn)
 
     o0.update(conn)
 
