@@ -9,7 +9,7 @@ from iso8601 import parse_date
 
 from psycopg import sql
 
-from .helper import acceptNone
+from .helper import acceptNone, classproperty
 
 if TYPE_CHECKING:
     from psycopg import connection
@@ -63,8 +63,8 @@ class DatabaseModel(Dataclass, Protocol):
     __schema_name__: str
     __table_name__: str
 
-    @staticmethod
-    def createTable(conn: 'connection.Connection[Any]', *, recreateSchema: bool = False, recreateTable: bool = False) -> None:
+    @classmethod
+    def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False, recreateTable: bool = False) -> None:
         """
         Create a table representing this class.
 
@@ -77,41 +77,119 @@ class DatabaseModel(Dataclass, Protocol):
         """
         ...
 
-    @staticmethod
-    def instatiateAll(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['DatabaseModel', ...]:
+    @classmethod
+    def instatiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['DatabaseModel', ...]:
+        """
+        Instantiate all models of this type with the given query.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param query: the additional query to use after the select statement
+        :type query: Union[str, sql.Composable]
+        :return: a tuple of every model returned from the query
+        :rtype: Tuple[DatabaseModel, ...]
+        """
         ...
 
-    @staticmethod
-    def instatiate(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
+    @classmethod
+    def instatiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
+        """
+        Instantiate each models of this type with the given query as a generator.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param query: the additional query to use after the select statement
+        :type query: Union[str, sql.Composable]
+        :return: a tuple of every model returned from the query
+        :rtype: Tuple[DatabaseModel, ...]
+        """
         ...
 
     def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+        """
+        Insert this model into the database.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param doTypeConversion: if true a conversion function will be called on each field
+        :type doTypeConversion: bool
+        """
         ...
 
     def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+        """
+        Update this model in the database, will replace any model currently in the database with the updated values.
+        If there was not a row with the primary key this model has it will raise an error.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param doTypeConversion: if true a conversion function will be called on each field
+        :type doTypeConversion: bool
+        """
         ...
 
     def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+        """
+        Intelligently either updates or inserts this model into the database. If there was not a row with the primary
+        key this model has it will insert it.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param doTypeConversion: if true a conversion function will be called on each field
+        :type doTypeConversion: bool
+        """
         ...
 
     @classmethod
     def getColumn(cls, name: str) -> 'Column':
+        """
+        Get a Column from a given name from this model type.
+
+        :param name: the name of the column
+        :type name: str
+        :return: the column with the given name
+        :rtype: Column
+        """
+        ...
+
+    @classproperty
+    def primaryKey(cls) -> Optional['Column']:
+        """
+        Get the primary key for this model or model type.
+
+        :return: either the primary key column or None
+        :rtype: Optional[Column]
+        """
         ...
 
     @property
-    def primaryKey(self) -> 'Column':
+    def primaryKeyValue(self) -> Optional[Any]:
+        """
+        Get this model's primary key value or None if there is no primary key.
+
+        :return: the primary key value
+        :rtype: Optional[Any]
+        """
         ...
 
-    @property
-    def primaryKeyValue(self) -> Any:
+    @classproperty
+    def schema(cls) -> str:
+        """
+        Get the schema for this model.
+
+        :return: the schema this model uses
+        :rtype: str
+        """
         ...
 
-    @property
-    def schema(self) -> str:
-        ...
+    @classproperty
+    def table(cls) -> str:
+        """
+        Get the table name for this model.
 
-    @property
-    def table(self) -> str:
+        :return: the table name this model uses
+        :rtype: str
+        """
         ...
 
 
@@ -148,6 +226,10 @@ class Column:
 
 
 class ColumnType(ABC):
+    """
+    Defines the types of data that is allowed in a column of a model.
+    """
+
     @property
     @abstractmethod
     def typeStatement(self) -> 'sql.Composable':
@@ -200,6 +282,10 @@ TABLE_OR_TABLE_COLUMN = Union['DatabaseModel', Tuple['DatabaseModel', str]]
 
 
 class ForeignKey(ColumnType):
+    """
+    Defines a column to be a foreign key to a different model.
+    """
+
     def __init__(self, model: 'DatabaseModel', schema: str, table: str, column: 'Column') -> None:
         self.model = model
 
@@ -286,6 +372,10 @@ class ModifiedColumnType(ColumnType, ABC):
 
 
 class NotNull(ModifiedColumnType):
+    """
+    Requires a column can not be null. Should be applied to most columns.
+    """
+
     @property
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL('{} NOT NULL').format(self.type.typeStatement)
@@ -300,6 +390,10 @@ class NotNull(ModifiedColumnType):
 
 
 class PrimaryKey(ModifiedColumnType):
+    """
+    Defines this column as the primary key for a table. There can only be one defined for each table.
+    """
+
     @property
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL('{} PRIMARY KEY').format(self.type.typeStatement)
@@ -313,6 +407,10 @@ class PrimaryKey(ModifiedColumnType):
 
 
 class Unique(ModifiedColumnType):
+    """
+    Requires that each value entered into the database is unique for this field.
+    """
+
     @property
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL('{} UNIQUE').format(self.type.typeStatement)
@@ -322,6 +420,10 @@ class Unique(ModifiedColumnType):
 
 
 class LiteralType(ColumnType):
+    """
+    A basic type. The type name and raw name are the same and there are customizable converter functions.
+    """
+
     def __init__(self, literal: str, converter: Callable[[str], Any], inverse: Callable[[Any], Any]) -> None:
         self.type = literal
         self.converter = acceptNone(converter)
@@ -349,6 +451,10 @@ class LiteralType(ColumnType):
 
 
 class EnumType(ColumnType):
+    """
+    A constructed type that can only be one of a few values.
+    """
+
     def __init__(self, type: str, enums: Tuple[str, ...]) -> None:
         self.type = type
         self.enums = enums
@@ -391,6 +497,10 @@ class EnumType(ColumnType):
 
 
 class PseudoType(LiteralType):
+    """
+    A type with which its name is different than its raw name.
+    """
+
     def __init__(self, name: str, rawName: str, converter: Callable[[str], Any], inverse: Callable[[Any], Any]) -> None:
         super().__init__(name, converter, inverse)
 

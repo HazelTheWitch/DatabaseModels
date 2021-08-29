@@ -9,6 +9,7 @@ __all__ = [
 ]
 
 from .datatypes import Column, DatabaseModel, Dataclass, NO_DEFAULT, AUTO_FILLED
+from .helper import classproperty
 
 
 def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
@@ -94,9 +95,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             def getColumn(cls, name: str) -> 'Column':
                 return cls.__column_definitions__[name]
 
-            @property
-            def primaryKey(self) -> Optional['Column']:
-                return WrappedClass.__primary_key__
+            @classproperty
+            def primaryKey(cls) -> Optional['Column']:
+                return cls.__primary_key__
 
             @property
             def primaryKeyValue(self) -> Optional[Any]:
@@ -105,16 +106,16 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     return None
                 return getattr(self, primary.name)
 
-            @property
-            def schema(self) -> str:
-                return WrappedClass.__schema_name__
+            @classproperty
+            def schema(cls) -> str:
+                return cls.__schema_name__
 
-            @property
-            def table(self) -> str:
-                return WrappedClass.__table_name__
+            @classproperty
+            def table(cls) -> str:
+                return cls.__table_name__
 
-            @staticmethod
-            def createTable(conn: 'connection.Connection[Any]', *, recreateSchema: bool = False,
+            @classmethod
+            def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False,
                             recreateTable: bool = False) -> None:
                 for defini in WrappedClass.__column_definitions__.values():
                     defini.initialize(conn)
@@ -149,12 +150,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                     cur.execute(createTable)
 
-            @staticmethod
-            def instatiateAll(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['WrappedClass', ...]:
-                return tuple(WrappedClass.instatiate(conn, query))
+            @classmethod
+            def instatiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['WrappedClass', ...]:
+                return tuple(cls.instatiate(conn, query))
 
-            @staticmethod
-            def instatiate(conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> \
+            @classmethod
+            def instatiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> \
                     Generator['WrappedClass', None, None]:
                 if isinstance(query, sql.Composable):
                     additionalQuery = query
@@ -176,7 +177,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                     while record is not None:
                         # Abuse duck-typing to get "2 init methods" sort of
-                        obj = WrappedClass(*argsNames)
+                        obj = cls(*argsNames)
 
                         obj._create(conn, record[0])
 

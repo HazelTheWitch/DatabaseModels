@@ -1,3 +1,4 @@
+import contextlib
 import unittest
 from dataclasses import dataclass
 
@@ -7,8 +8,10 @@ from src.databasemodels.datatypes import *
 from helper import ConnectionUnitTest
 
 
-class TestDecorator(unittest.TestCase):
-    def test_creation(self) -> None:
+class TestDecorator(ConnectionUnitTest):
+    def setUp(self) -> None:
+        super().setUp()
+
         @dbm.model('unittests', 'fruits')
         @dataclass
         class Fruit:
@@ -17,7 +20,10 @@ class TestDecorator(unittest.TestCase):
             weight: REAL = NO_DEFAULT
             color: EnumType('color', ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')) = NO_DEFAULT
 
-        pear = Fruit('Pear', 3, 'yellow')
+        self.Fruit = Fruit
+
+    def test_creation(self) -> None:
+        pear = self.Fruit('Pear', 3, 'yellow')
 
         self.assertEqual(pear.name, 'Pear')
         self.assertEqual(pear.weight, 3)
@@ -35,6 +41,7 @@ class TestGetters(unittest.TestCase):
             color: EnumType('color', ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')) = NO_DEFAULT
 
         self.pear = Fruit('Pear', 3, 'yellow')
+        self.Fruit = Fruit
 
     def test_getColumn(self) -> None:
         self.assertIsInstance(self.pear.getColumn('id'), Column)
@@ -47,6 +54,7 @@ class TestGetters(unittest.TestCase):
 
     def test_primaryKey(self) -> None:
         self.assertEqual(self.pear.getColumn('id'), self.pear.primaryKey)
+        self.assertEqual(self.pear.getColumn('id'), self.Fruit.primaryKey)
 
     def test_schema(self) -> None:
         self.assertEqual(self.pear.schema, 'unittests')
