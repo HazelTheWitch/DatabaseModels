@@ -58,9 +58,11 @@ class TestGetters(unittest.TestCase):
 
     def test_schema(self) -> None:
         self.assertEqual(self.pear.schema, 'unittests')
+        self.assertEqual(self.Fruit.schema, 'unittests')
 
     def test_table(self) -> None:
         self.assertEqual(self.pear.table, 'fruits')
+        self.assertEqual(self.Fruit.table, 'fruits')
 
 
 class TestCreation(ConnectionUnitTest):
