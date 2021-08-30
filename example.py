@@ -22,6 +22,7 @@ class Order:
     quantity: INTEGER = NO_DEFAULT
     orderedAt: TIMESTAMP = NO_DEFAULT
     fulfilled: BOOL = NO_DEFAULT
+    additionalData: JSONB = NO_DEFAULT
 
 
 conn = dbm.createOrLoadConnection('login.pkl')
@@ -35,17 +36,17 @@ with conn:
         p1 = Person('Hunter', 'male', 20, '3')
         p2 = Person('Dacota', 'nonbinary', 19, 32)
 
-        o0 = Order(p0, 3, datetime.now(), False)
+        o0 = Order(p0, 3, datetime.now(), False, {'a': True, 'b': [1.2, 3.4]})
 
         print('Original Objects')
         print(p0, p1, p2, o0, sep='\n')
         print()
 
-        o0.insertOrUpdate(conn)
-
         p0.insertOrUpdate(conn)
         p1.insertOrUpdate(conn)
         p2.insertOrUpdate(conn)
+
+        o0.insertOrUpdate(conn)
 
         print('Retrieved from Database')
         print(*Person.instatiateAll(conn), sep='\n')
@@ -56,14 +57,18 @@ with conn:
         print(p0, p1, p2, o0, sep='\n')
         print()
 
-        p0.favoriteNumber = 17
+        # Update within the object because no reference exists to it within p0
+        # A bit weird but works
+        o0.customerID.favoriteNumber = 17
         p1.age = 21
 
         p2.age = 20
 
         o0.fulfilled = True
 
-        p0.update(conn)
+        # p0.update is implicitly called within o0.update so no need to update here
+        # p0.update(conn)
+
         p1.update(conn)
         p2.update(conn)
 

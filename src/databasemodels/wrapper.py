@@ -73,8 +73,6 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 if type(record) != tuple:
                     record = (record,)
 
-                record = tuple(str(r) for r in record)
-
                 record = cast(Tuple[str, ...], record)
 
                 for kc, v in zip(WrappedClass.__column_definitions__.items(), record):
@@ -96,7 +94,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 return cls.__column_definitions__[name]
 
             @classproperty
-            def primaryKey(cls) -> Optional['Column']:
+            def primaryKey(cls: Type['DatabaseModel']) -> Optional['Column']:
                 return cls.__primary_key__
 
             @property
@@ -107,11 +105,11 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 return getattr(self, primary.name)
 
             @classproperty
-            def schema(cls) -> str:
+            def schema(cls: Type['DatabaseModel']) -> str:
                 return cls.__schema_name__
 
             @classproperty
-            def table(cls) -> str:
+            def table(cls: Type['DatabaseModel']) -> str:
                 return cls.__table_name__
 
             @classmethod

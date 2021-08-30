@@ -1,15 +1,16 @@
 import datetime
+import json
 import re
 from abc import ABC, abstractmethod
 from dataclasses import Field
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, Union, Tuple, Optional, OrderedDict, \
-    Callable, Generator
+    Callable, Generator, Type
 
 from iso8601 import parse_date
 
 from psycopg import sql
 
-from .helper import acceptNone, classproperty
+from .helper import acceptNone, classproperty, identity
 
 if TYPE_CHECKING:
     from psycopg import connection
@@ -38,6 +39,10 @@ __all__ = [
     'DATE',
     'TIME',
     # 'INTERVAL',
+
+    'JSON',
+    'JSONB',
+
     'BOOL',
     'VARCHAR',
     'CHAR',
@@ -153,7 +158,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classproperty
-    def primaryKey(cls) -> Optional['Column']:
+    def primaryKey(cls: Type['DatabaseModel']) -> Optional['Column']:
         """
         Get the primary key for this model or model type.
 
@@ -173,7 +178,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classproperty
-    def schema(cls) -> str:
+    def schema(cls: Type['DatabaseModel']) -> str:
         """
         Get the schema for this model.
 
@@ -183,7 +188,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classproperty
-    def table(cls) -> str:
+    def table(cls: Type['DatabaseModel']) -> str:
         """
         Get the table name for this model.
 
@@ -523,6 +528,9 @@ TIMESTAMP_WITH_TIMEZONE = LiteralType('TIMESTAMP WITH TIME ZONE', parse_date, la
 DATE = LiteralType('DATE', datetime.date.fromisoformat, lambda t: t.isoformat())
 TIME = LiteralType('TIME', datetime.time.fromisoformat, lambda t: t.isoformat())
 # INTERVAL = LiteralType('INTERVAL', str, str)
+
+JSON = LiteralType('JSON', json.loads, json.dumps)
+JSONB = LiteralType('JSONB', json.loads, json.dumps)
 
 BOOL = LiteralType('BOOLEAN', lambda s: s == 't', bool)
 
