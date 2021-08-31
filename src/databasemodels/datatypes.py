@@ -1,7 +1,9 @@
+import ast
 import datetime
 import json
 import re
 from abc import ABC, abstractmethod
+from collections import deque
 from dataclasses import Field
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, Union, Tuple, Optional, OrderedDict, \
     Callable, Generator, Type
@@ -28,6 +30,7 @@ __all__ = [
     'PrimaryKey',
     'Unique',
     'NotNull',
+    'Array',
 
     'EnumType',
     'INTEGER',
@@ -374,6 +377,43 @@ class ModifiedColumnType(ColumnType, ABC):
 
     def __str__(self) -> str:
         return str(self.type)
+
+
+class Array(ModifiedColumnType):
+    """
+    Turns the given collumn into an array, must be used first in any chain of modified types.
+    """
+
+    def __init__(self, type: 'ColumnType', length: Optional[int] = None) -> None:
+        super().__init__(type)
+        self.length = length
+
+    def __class_getitem__(cls, items: Union['ColumnType', Tuple['ColumnType', int]]) -> 'ModifiedColumnType':
+        if type(items) == tuple:
+            return cls(*items)
+        return cls(items)
+
+    @property
+    def typeStatement(self) -> 'sql.Composable':
+        if self.length is not None:
+            return sql.SQL('{}[' + str(self.length) + ']').format(self.type.typeStatement)
+        else:
+            return sql.SQL('{}[]').format(self.type.typeStatement)
+
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+        items = [None if i == 'NULL' else i for i in string[1:-1].split(',')]
+        if self.length is not None and len(items) != self.length:
+            raise ValueError(f'Expected {self.length} items, got {len(items)} ({string})')
+        return list(self.type.convertDataFromString(conn, item) for item in items)
+
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
+        return list(self.type.convertInsertableFromData(conn, d) for d in data)
+
+    def __str__(self) -> str:
+        if self.length is not None:
+            return str(self.type) + f'[{self.length}]'
+        else:
+            return str(self.type) + '[]'
 
 
 class NotNull(ModifiedColumnType):
