@@ -6,7 +6,7 @@ __all__ = [
     'acceptNone',
     'classproperty',
     'identity',
-    'splitStringArray'
+    'splitArrayString'
 ]
 
 
@@ -35,19 +35,21 @@ class classproperty:
         return self.func(owner)
 
 
-def splitStringArray(arraystring: str) -> List[str]:
-    """Parses a string array from psycopg into a string array"""
+def splitArrayString(arraystring: str) -> List[str]:
+    """Parses a string array from psycopg into a proper array"""
     itemstring = arraystring[1:-1]  # Cut off {}
 
     escaped = False
 
     inString = False
 
+    depth = 0
+
     items = []
     startingIndex = 0
 
     for i, c in enumerate(itemstring):
-        if c == ',' and not inString:
+        if c == ',' and not inString and depth == 0:
             items.append(itemstring[startingIndex:i])
             startingIndex = i + 1
 
@@ -58,6 +60,10 @@ def splitStringArray(arraystring: str) -> List[str]:
                 inString = not inString
             elif c == '\\':
                 escaped = True
+            elif c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
 
     items.append(itemstring[startingIndex:])
 
@@ -65,4 +71,5 @@ def splitStringArray(arraystring: str) -> List[str]:
         if item[0] != '"':
             items[i] = f'"{item}"'
 
-    return list(map(ast.literal_eval, items))
+    return list(map(ast.literal_eval, items))  # Safely eval strings
+
