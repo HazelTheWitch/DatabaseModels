@@ -9,7 +9,7 @@ shortDescription = description.split('\n')[2]
 
 setup(
     name='databasemodels',
-    version='1.1.0',
+    version='1.2.0',
     description=shortDescription,
     long_description=description,
     long_description_content_type='text/markdown',
