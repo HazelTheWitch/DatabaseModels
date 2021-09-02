@@ -2,6 +2,7 @@ import ast
 import datetime
 import json
 import re
+import warnings
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import Field
@@ -382,9 +383,14 @@ class ModifiedColumnType(ColumnType, ABC):
 class Array(ModifiedColumnType):
     """
     Turns the given collumn into an array, must be used first in any chain of modified types.
+    **This class does not work well with string type data types due to the way psycopg converts arrays to
+    Python objects.**
     """
 
     def __init__(self, type: 'ColumnType', length: Optional[int] = None) -> None:
+        if type == TEXT or 'CHAR' in type.rawType:
+            warnings.warn('Arrays of character based data types are unstable and may not work properly.', stacklevel=3)
+
         super().__init__(type)
         self.length = length
 
