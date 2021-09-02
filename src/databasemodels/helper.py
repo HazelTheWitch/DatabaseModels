@@ -28,6 +28,7 @@ def identity(x: T) -> T:
 
 
 class classproperty:
+    """Much like property except only allows for a gettter and works like a classmethod. No instances needed!"""
     def __init__(self, func: Callable[[Type[Any]], Any]) -> None:
         self.func = func
 

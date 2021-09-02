@@ -8,8 +8,6 @@ __all__ = [
     'model',
 ]
 
-from psycopg.rows import class_row
-
 from .datatypes import Column, DatabaseModel, Dataclass, NO_DEFAULT, AUTO_FILLED
 from .helper import classproperty
 
@@ -33,8 +31,6 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         argsNames: List[str] = []
         allFieldsName: List[str] = []
 
-        primaryKeyIndex: Optional[int] = None
-
         # PyCharm does not recognize cls as a Dataclass despite being type hinted as one
         # noinspection PyDataclass
         for i, field in enumerate(fields(cls)):
@@ -50,7 +46,6 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 if _primaryKey is not None:
                     raise TypeError(f'{schemaName}.{tableName} ({cls.__name__}) Has two primary keys defined')
                 _primaryKey = definition
-                primaryKeyIndex = i
 
             if not (field.default is MISSING or field.default is NO_DEFAULT or field.default is AUTO_FILLED):
                 raise TypeError(f'{field.name} does not declare default type of MISSING, NO_DEFAULT, or AUTO_FILLED')
