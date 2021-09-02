@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, Callable, cast
 from iso8601 import parse_date
 from psycopg import sql
 
-from .columns import ColumnType
+from .columns import ColumnType, Column
 from .helper import acceptNone, splitArrayString
 from .protocols import DatabaseModel
 
