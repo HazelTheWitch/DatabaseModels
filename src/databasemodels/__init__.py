@@ -1,6 +1,8 @@
 from .wrapper import *
 from . import datatypes as dtypes
 from .connection import *
+from .columns import *
+from .protocols import *
 
 # TODO: Implement Interval
 # TODO: Implement composite types (maybe)

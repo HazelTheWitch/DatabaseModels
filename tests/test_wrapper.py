@@ -44,10 +44,10 @@ class TestGetters(unittest.TestCase):
         self.Fruit = Fruit
 
     def test_getColumn(self) -> None:
-        self.assertIsInstance(self.pear.getColumn('id'), Column)
-        self.assertIsInstance(self.pear.getColumn('name'), Column)
-        self.assertIsInstance(self.pear.getColumn('weight'), Column)
-        self.assertIsInstance(self.pear.getColumn('color'), Column)
+        self.assertIsInstance(self.pear.getColumn('id'), dbm.Column)
+        self.assertIsInstance(self.pear.getColumn('name'), dbm.Column)
+        self.assertIsInstance(self.pear.getColumn('weight'), dbm.Column)
+        self.assertIsInstance(self.pear.getColumn('color'), dbm.Column)
 
         with self.assertRaises(KeyError):
             self.pear.getColumn('non_existant')

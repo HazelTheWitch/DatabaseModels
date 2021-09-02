@@ -8,7 +8,9 @@ __all__ = [
     'model',
 ]
 
-from .datatypes import Column, DatabaseModel, Dataclass, NO_DEFAULT, AUTO_FILLED
+from .datatypes import NO_DEFAULT, AUTO_FILLED
+from .columns import Column
+from .protocols import Dataclass, DatabaseModel
 from .helper import classproperty
 
 
