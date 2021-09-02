@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import Field
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, Union, Tuple, Optional, OrderedDict, \
-    Callable, Generator, Type
+    Callable, Generator, Type, cast
 
 from iso8601 import parse_date
 
@@ -389,7 +389,8 @@ class Array(ModifiedColumnType):
 
     def __init__(self, type: 'ColumnType', length: Optional[int] = None) -> None:
         if type == TEXT or 'CHAR' in type.rawType:
-            warnings.warn('Arrays of character based data types are unstable and may not work properly.', stacklevel=3)
+            warnings.warn('Arrays of character based data types are unstable and may not work properly.',
+                          RuntimeWarning, stacklevel=3)
 
         super().__init__(type)
         self.length = length
@@ -397,7 +398,7 @@ class Array(ModifiedColumnType):
     def __class_getitem__(cls, items: Union['ColumnType', Tuple['ColumnType', int]]) -> 'ModifiedColumnType':
         if type(items) == tuple:
             return cls(*items)
-        return cls(items)
+        return cls(cast('ColumnType', items))
 
     @property
     def typeStatement(self) -> 'sql.Composable':
