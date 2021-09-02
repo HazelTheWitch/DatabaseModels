@@ -11,7 +11,7 @@ class Person:
     id: PrimaryKey[SERIAL] = AUTO_FILLED
     gender: NotNull[EnumType('gender', ('male', 'female', 'nonbinary'))] = NO_DEFAULT
     age: INTEGER = NO_DEFAULT
-    favoriteNumbers: Array[INTEGER] = NO_DEFAULT
+    favoriteNumbers: Array[TEXT] = NO_DEFAULT
 
 
 @dbm.model('example', 'orders')
@@ -32,7 +32,7 @@ with conn:
         Person.createTable(conn, recreateTable=True)
         Order.createTable(conn, recreateTable=True)
 
-        p0 = Person('Hazel', 'female', 20, [1, 2, 3])
+        p0 = Person('Hazel', 'female', 20, ['a\'', 'b,\\\\"\'', 'c"\''])
         p1 = Person('Hunter', 'male', 20, ['3', None])
         p2 = Person('Dacota', 'nonbinary', 19, [32])
 

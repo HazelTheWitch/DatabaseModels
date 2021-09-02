@@ -8,6 +8,8 @@ __all__ = [
     'model',
 ]
 
+from psycopg.rows import class_row
+
 from .datatypes import Column, DatabaseModel, Dataclass, NO_DEFAULT, AUTO_FILLED
 from .helper import classproperty
 

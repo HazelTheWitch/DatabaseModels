@@ -13,7 +13,7 @@ from iso8601 import parse_date
 
 from psycopg import sql
 
-from .helper import acceptNone, classproperty, identity
+from .helper import acceptNone, classproperty, identity, splitStringArray
 
 if TYPE_CHECKING:
     from psycopg import connection
@@ -388,12 +388,13 @@ class Array(ModifiedColumnType):
     """
 
     def __init__(self, type: 'ColumnType', length: Optional[int] = None) -> None:
-        if type == TEXT or 'CHAR' in type.rawType:
-            warnings.warn('Arrays of character based data types are unstable and may not work properly.',
-                          RuntimeWarning, stacklevel=3)
-
         super().__init__(type)
         self.length = length
+
+        self.stringType = False
+
+        if type == TEXT or 'CHAR' in type.rawType or isinstance(type, EnumType):  # TEXT, CHAR, VARCHAR, enums
+            self.stringType = True
 
     def __class_getitem__(cls, items: Union['ColumnType', Tuple['ColumnType', int]]) -> 'ModifiedColumnType':
         if type(items) == tuple:
@@ -408,7 +409,11 @@ class Array(ModifiedColumnType):
             return sql.SQL('{}[]').format(self.type.typeStatement)
 
     def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
-        items = [None if i == 'NULL' else i for i in string[1:-1].split(',')]
+        if self.stringType:
+            items = splitStringArray(string)
+        else:
+            items = string[1:-1].split(',')
+        items = [None if i == 'NULL' else i for i in items]
         if self.length is not None and len(items) != self.length:
             raise ValueError(f'Expected {self.length} items, got {len(items)} ({string})')
         return list(self.type.convertDataFromString(conn, item) for item in items)
