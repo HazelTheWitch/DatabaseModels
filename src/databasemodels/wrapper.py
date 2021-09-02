@@ -33,9 +33,11 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         argsNames: List[str] = []
         allFieldsName: List[str] = []
 
+        primaryKeyIndex: Optional[int] = None
+
         # PyCharm does not recognize cls as a Dataclass despite being type hinted as one
         # noinspection PyDataclass
-        for field in fields(cls):
+        for i, field in enumerate(fields(cls)):
             definition = Column.fromField(field)
 
             allFieldsName.append(field.name)
@@ -48,6 +50,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 if _primaryKey is not None:
                     raise TypeError(f'{schemaName}.{tableName} ({cls.__name__}) Has two primary keys defined')
                 _primaryKey = definition
+                primaryKeyIndex = i
 
             if not (field.default is MISSING or field.default is NO_DEFAULT or field.default is AUTO_FILLED):
                 raise TypeError(f'{field.name} does not declare default type of MISSING, NO_DEFAULT, or AUTO_FILLED')
@@ -184,6 +187,16 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                         yield obj
 
                         record = cur.fetchone()
+
+            @classmethod
+            def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
+                if cls.__primary_key__ is None:
+                    raise TypeError(f'Model {cls.__name__} has no primary key to instantiate from')
+
+                return cls.instatiateAll(conn, sql.SQL('WHERE {} = {}').format(
+                    sql.Identifier(cls.__primary_key__.name),
+                    sql.Literal(primaryKey)
+                ))[0]
 
             def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
                 if doTypeConversion:

@@ -1,19 +1,16 @@
-import ast
+import datetime
 import datetime
 import json
 import re
-import warnings
 from abc import ABC, abstractmethod
-from collections import deque
 from dataclasses import Field
 from typing import TYPE_CHECKING, Any, runtime_checkable, Protocol, Dict, Union, Tuple, Optional, OrderedDict, \
     Callable, Generator, Type, cast
 
 from iso8601 import parse_date
-
 from psycopg import sql
 
-from .helper import acceptNone, classproperty, identity, splitArrayString
+from .helper import acceptNone, classproperty, splitArrayString
 
 if TYPE_CHECKING:
     from psycopg import connection
@@ -111,6 +108,21 @@ class DatabaseModel(Dataclass, Protocol):
         :type query: Union[str, sql.Composable]
         :return: a tuple of every model returned from the query
         :rtype: Tuple[DatabaseModel, ...]
+        """
+        ...
+
+    @classmethod
+    def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
+        """
+        Instantiate a model from a given primary key. The model must have a primary key and the given primaryKeyValue
+        must correspond to a value.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param primaryKey: the primary key to look up
+        :type primaryKey: Any
+        :return: the model
+        :rtype: DatabaseModel
         """
         ...
 
@@ -258,7 +270,7 @@ class ColumnType(ABC):
         ...
 
     @abstractmethod
-    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
         """
         Convert string retrieved from the database to a Python object representation.
         Should be the inverse of convertInsertableFromData.
@@ -266,7 +278,7 @@ class ColumnType(ABC):
         :param conn: the connection to use
         :type conn: psycopg.connection.Connection
         :param string: the string to convert
-        :type string: str
+        :type string: Optional[str]
         :return: the Python object
         :rtype: Any
         """
@@ -326,14 +338,11 @@ class ForeignKey(ColumnType):
             sql.SQL(self.column.name)
         )
 
-    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
         if self.model.__primary_key__ is None:
             raise TypeError(f'{self.model} contains no primary key')
 
-        return self.model.instatiateAll(conn, sql.SQL('WHERE {} = {}').format(
-            sql.Identifier(self.model.__primary_key__.name),
-            sql.Literal(string)
-        ))[0]
+        return self.model.instantiateFromPrimaryKey(conn, string)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if self.model.__primary_key__ is None:
@@ -370,7 +379,7 @@ class ModifiedColumnType(ColumnType, ABC):
     def primary(self) -> bool:
         return self.type.primary
 
-    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
         return self.type.convertDataFromString(conn, string)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
@@ -383,8 +392,6 @@ class ModifiedColumnType(ColumnType, ABC):
 class Array(ModifiedColumnType):
     """
     Turns the given collumn into an array, must be used first in any chain of modified types.
-    **This class does not work well with string type data types due to the way psycopg converts arrays to
-    Python objects.**
     """
 
     def __init__(self, type: 'ColumnType', length: Optional[int] = None) -> None:
@@ -403,13 +410,20 @@ class Array(ModifiedColumnType):
         else:
             return sql.SQL('{}[]').format(self.type.typeStatement)
 
-    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
+        if string is None:
+            return None
+
         items = [None if i == 'NULL' else i for i in splitArrayString(string)]
+        
         if self.length is not None and len(items) != self.length:
             raise ValueError(f'Expected {self.length} items, got {len(items)} ({string})')
+        
         return list(self.type.convertDataFromString(conn, item) for item in items)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
+        if data is None:
+            return None
         return list(self.type.convertInsertableFromData(conn, d) for d in data)
 
     def __str__(self) -> str:
@@ -488,7 +502,9 @@ class LiteralType(ColumnType):
     def rawType(self) -> str:
         return self.type
 
-    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
+        if string is None:
+            return None
         return self.converter(string)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
@@ -529,7 +545,7 @@ class EnumType(ColumnType):
     def rawType(self) -> str:
         return self.type
 
-    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: str) -> Any:
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
         return string
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:

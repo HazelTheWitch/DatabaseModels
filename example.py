@@ -33,8 +33,8 @@ with conn:
         Person.createTable(conn, recreateTable=True)
         Order.createTable(conn, recreateTable=True)
 
-        p0 = Person('Hazel', 'female', 20, [1, 2, 3], [['a', 'b'], ['c', 'd']])
-        p1 = Person('Hunter', 'male', 20, ['3', None], [['a', 'b'], ['c', 'd']])
+        p0 = Person('Hazel', 'female', 20, [1, 2, 3], [['{{a', 'b"""'], ['c', 'd']])
+        p1 = Person('Hunter', 'male', 20, ['3', None], None)
         p2 = Person('Dacota', 'nonbinary', 19, [32], [['a', 'b'], ['c', 'd']])
 
         o0 = Order(p0, 3, datetime.now(), False, {'a': True, 'b': [1.2, 3.4]})
@@ -60,7 +60,7 @@ with conn:
 
         # Update within the object because no reference exists to it within p0
         # A bit weird but works
-        o0.customerID.favoriteNumber = 17
+        o0.customerID.favoriteNumbers = [17]
         p1.age = 21
 
         p2.age = 20

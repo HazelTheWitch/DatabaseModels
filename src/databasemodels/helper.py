@@ -35,8 +35,12 @@ class classproperty:
         return self.func(owner)
 
 
-def splitArrayString(arraystring: str) -> List[str]:
+def splitArrayString(arraystring: Optional[str]) -> List[str]:
     """Parses a string array from psycopg into a proper array"""
+    # Return empty list for null values
+    if arraystring is None:
+        return []
+
     itemstring = arraystring[1:-1]  # Cut off {}
 
     escaped = False
@@ -60,16 +64,18 @@ def splitArrayString(arraystring: str) -> List[str]:
                 inString = not inString
             elif c == '\\':
                 escaped = True
-            elif c == '{':
-                depth += 1
-            elif c == '}':
-                depth -= 1
+
+            # Handle multi-dimensional array strings
+            if not inString:
+                if c == '{':
+                    depth += 1
+                elif c == '}':
+                    depth -= 1
 
     items.append(itemstring[startingIndex:])
 
     for i, item in enumerate(items):
-        if item[0] != '"':
-            items[i] = f'"{item}"'
+        if item[0] == '"':
+            items[i] = ast.literal_eval(item)  # Safely eval strings
 
-    return list(map(ast.literal_eval, items))  # Safely eval strings
-
+    return items
