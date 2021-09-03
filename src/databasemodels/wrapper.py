@@ -286,7 +286,6 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         WrappedClass.__annotations__.update(cls.__annotations__)
         WrappedClass.__doc__ = cls.__doc__
 
-        # WrappedClass is of type Type['DatabaseModel'] but type checker does not see that in PyCharm
         return WrappedClass
 
     return wrapped
