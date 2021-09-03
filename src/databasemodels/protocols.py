@@ -1,6 +1,6 @@
 from dataclasses import Field
 from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, runtime_checkable, Protocol, Dict, OrderedDict, \
-    Generator, Type
+    Generator, Type, List
 
 from psycopg import sql
 
@@ -172,5 +172,15 @@ class DatabaseModel(Dataclass, Protocol):
 
         :return: the table name this model uses
         :rtype: str
+        """
+        ...
+
+    @classproperty
+    def columns(cls: Type['DatabaseModel']) -> List['Column']:
+        """
+        Get all columns for this model.
+
+        :return: a list of columns
+        :rtype: List[Column]
         """
         ...

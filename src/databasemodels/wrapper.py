@@ -116,10 +116,14 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             def table(cls: Type['DatabaseModel']) -> str:
                 return cls.__table_name__
 
+            @classproperty
+            def columns(cls: Type['DatabaseModel']) -> List['Column']:
+                return list(cls.__column_definitions__.values())
+
             @classmethod
             def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False,
                             recreateTable: bool = False) -> None:
-                for defini in WrappedClass.__column_definitions__.values():
+                for defini in cls.columns:
                     defini.initialize(conn)
 
                 createSchema = sql.SQL(
@@ -133,7 +137,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 ).format(
                     sql.Identifier(schemaName, tableName),
                     sql.SQL(', ').join(
-                        [d.columnDefinition for d in WrappedClass.__column_definitions__.values()]
+                        [d.columnDefinition for d in cls.columns]
                     )
                 )
 
@@ -166,7 +170,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                 queryStatement = sql.SQL('SELECT ({}) FROM {} {};').format(
                     sql.SQL(', ').join(
-                        [sql.Identifier(c.name) for c in WrappedClass.__column_definitions__.values()]
+                        [sql.Identifier(c.name) for c in cls.columns]
                     ),
                     sql.Identifier(schemaName, tableName),
                     additionalQuery
@@ -199,17 +203,16 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
             def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
                 if doTypeConversion:
-                    data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in
-                            self.__column_definitions__.values() if c.name in argsNames]
+                    data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in self.columns if c.name in argsNames]
                 else:
-                    data = [getattr(self, c.name) for c in self.__column_definitions__.values() if c.name in argsNames]
+                    data = [getattr(self, c.name) for c in self.columns if c.name in argsNames]
 
-                allColumns = [sql.Identifier(c.name) for c in WrappedClass.__column_definitions__.values()]
+                allColumns = [sql.Identifier(c.name) for c in self.columns]
 
                 insertStatement = sql.SQL('INSERT INTO {} ({}) VALUES ({}) RETURNING ({});').format(
                     sql.Identifier(schemaName, tableName),
                     sql.SQL(', ').join(
-                        [sql.Identifier(c.name) for c in self.__column_definitions__.values() if c.name in argsNames]
+                        [sql.Identifier(c.name) for c in self.columns if c.name in argsNames]
                     ),
                     sql.SQL(', ').join(
                         list(map(sql.Literal, data))
@@ -234,15 +237,14 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     raise PrimaryKeyError('Can not update a database model without a primary key.')
 
                 if doTypeConversion:
-                    data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in
-                            self.__column_definitions__.values()]
+                    data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in self.columns]
                 else:
-                    data = [getattr(self, c.name) for c in self.__column_definitions__.values()]
+                    data = [getattr(self, c.name) for c in self.columns]
 
                 updateStatement = sql.SQL('UPDATE {} SET ({}) = ({}) WHERE {} = {};').format(
                     sql.Identifier(schemaName, tableName),
                     sql.SQL(', ').join(
-                        [sql.Identifier(c.name) for c in WrappedClass.__column_definitions__.values()]
+                        [sql.Identifier(c.name) for c in self.columns]
                     ),
                     sql.SQL(', ').join(
                         list(map(sql.Literal, data))
