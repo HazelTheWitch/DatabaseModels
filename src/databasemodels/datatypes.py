@@ -9,7 +9,7 @@ from psycopg import sql
 
 from .columns import ColumnType, Column
 from .exceptions import PrimaryKeyError, NullValueError, EnumValueError, ArrayLengthWarning
-from .helper import acceptNone, splitArrayString
+from .helper import acceptNone, splitNestedString
 from .protocols import DatabaseModel
 
 if TYPE_CHECKING:
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     'ForeignKey',
+    'Composite',
     'PrimaryKey',
     'Unique',
     'NotNull',
@@ -105,6 +106,55 @@ class ForeignKey(ColumnType):
         return f'{self.rawType} REFERENCES "{self.schema}"."{self.table}" ({self.column.name})'
 
 
+class Composite(ColumnType):
+    """
+    Creates a composite postgres type.
+    """
+
+    def __init__(self, name: str, fields: Tuple[Tuple[str, 'ColumnType'], ...]) -> None:
+        self.name = name
+        self.fields = fields
+
+    def __class_getitem__(cls, definition: Tuple[str, Tuple[Tuple[str, 'ColumnType'], ...]]) -> 'Composite':
+        name, fields = definition
+        return cls(name, fields)
+
+    @property
+    def typeStatement(self) -> 'sql.Composable':
+        return sql.SQL(self.name)
+
+    @property
+    def rawType(self) -> str:
+        return self.name
+
+    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
+        conn.execute(
+            sql.SQL("""
+            DO $$ BEGIN
+                CREATE TYPE {} AS ({});
+            EXCEPTION
+                WHEN duplicate_object THEN null;
+            END $$;
+            """).format(
+                sql.Identifier(self.name),
+                sql.SQL(', ').join([
+                    sql.SQL('{} {}').format(
+                        sql.Identifier(name),
+                        column.typeStatement
+                    ) for name, column in self.fields
+                ])
+            )
+        )
+
+    def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
+        columns = (c for _, c in self.fields)
+
+        return tuple(c.convertDataFromString(conn, i) for c, i in zip(columns, splitNestedString(string)))
+
+    def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
+        return data
+
+
 class ModifiedColumnType(ColumnType, ABC):
     def __init__(self, type: 'ColumnType') -> None:
         self.type = type
@@ -164,7 +214,7 @@ class Array(ModifiedColumnType):
         if string is None:
             return None
 
-        items = splitArrayString(string)
+        items = splitNestedString(string)
         
         if self.length is not None and len(items) != self.length:
             warnings.warn(f'Expected {self.length} items, got {len(items)} ({string})', ArrayLengthWarning)

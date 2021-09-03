@@ -6,7 +6,7 @@ __all__ = [
     'acceptNone',
     'classproperty',
     'identity',
-    'splitArrayString'
+    'splitNestedString'
 ]
 
 
@@ -36,8 +36,8 @@ class classproperty:
         return self.func(owner)
 
 
-def splitArrayString(arraystring: Optional[str]) -> List[str]:
-    """Parses a string array from psycopg into a proper array"""
+def splitNestedString(arraystring: Optional[str]) -> List[str]:
+    """Parses a string from psycopg array/composite type into a list"""
     # Return empty list for null values
     if arraystring is None:
         return []
@@ -68,9 +68,9 @@ def splitArrayString(arraystring: Optional[str]) -> List[str]:
 
             # Handle multi-dimensional array strings
             if not inString:
-                if c == '{':
+                if c == '{' or c == '(':
                     depth += 1
-                elif c == '}':
+                elif c == '}' or c == ')':
                     depth -= 1
 
     items.append(itemstring[startingIndex:])

@@ -225,5 +225,29 @@ class TestMultiArrays(ConnectionUnitTest):
         self.assertEqual(multi, other)
 
 
+class TestComposites(ConnectionUnitTest):
+    def setUp(self) -> None:
+        super().setUp()
+
+        @dbm.model('unittests', 'multiarray')
+        @dataclass
+        class CompositeTypes:
+            complexNumber: Composite['complex', (('r', REAL), ('i', REAL))] = NO_DEFAULT
+
+        self.CompositeTypes = CompositeTypes
+
+        CompositeTypes.createTable(self.conn, recreateTable=True)
+
+    def test_composites(self) -> None:
+        c0 = self.CompositeTypes((1.0, 2.0))
+
+        c0.insert(self.conn)
+
+        c1 = self.CompositeTypes.instatiateAll(self.conn)[0]
+
+        self.assertEqual(c0, c1)
+        self.assertNotEqual(c0, self.CompositeTypes((2.0, 3.0)))
+
+
 if __name__ == '__main__':
     unittest.main()
