@@ -10,6 +10,7 @@ __all__ = [
 
 from .datatypes import NO_DEFAULT, AUTO_FILLED
 from .columns import Column
+from .exceptions import PrimaryKeyError, FieldDefaultValueError
 from .protocols import Dataclass, DatabaseModel
 from .helper import classproperty
 
@@ -46,11 +47,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
             if definition.type.primary:
                 if _primaryKey is not None:
-                    raise TypeError(f'{schemaName}.{tableName} ({cls.__name__}) Has two primary keys defined')
+                    raise PrimaryKeyError(f'{schemaName}.{tableName} ({cls.__name__}) Has two primary keys defined')
                 _primaryKey = definition
 
             if not (field.default is MISSING or field.default is NO_DEFAULT or field.default is AUTO_FILLED):
-                raise TypeError(f'{field.name} does not declare default type of MISSING, NO_DEFAULT, or AUTO_FILLED')
+                raise FieldDefaultValueError(f'{field.name} does not declare default type of MISSING, NO_DEFAULT, '
+                                             f'or AUTO_FILLED')
 
         argsString = ', '.join(argsNames)
         settersString = '\n'.join(f'    self.{a} = {a}' for a in argsNames)
@@ -188,7 +190,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             @classmethod
             def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
                 if cls.__primary_key__ is None:
-                    raise TypeError(f'Model {cls.__name__} has no primary key to instantiate from')
+                    raise PrimaryKeyError(f'Model {cls.__name__} has no primary key to instantiate from')
 
                 return cls.instatiateAll(conn, sql.SQL('WHERE {} = {}').format(
                     sql.Identifier(cls.__primary_key__.name),
@@ -229,7 +231,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 primary = self.primaryKey
 
                 if primary is None:
-                    raise TypeError('Can not update a database model without a primary key.')
+                    raise PrimaryKeyError('Can not update a database model without a primary key.')
 
                 if doTypeConversion:
                     data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in
@@ -254,7 +256,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
             def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
                 if self.primaryKey is None:
-                    raise TypeError(f'{self} does not contain a primary key')
+                    raise PrimaryKeyError('Can not insert/update a database model without a primary key.')
 
                 if self.primaryKeyValue is None:
                     self.insert(conn, doTypeConversion=doTypeConversion)

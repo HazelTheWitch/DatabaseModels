@@ -1,5 +1,6 @@
 import datetime
 import json
+import warnings
 from abc import ABC
 from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, Callable, cast
 
@@ -7,6 +8,7 @@ from iso8601 import parse_date
 from psycopg import sql
 
 from .columns import ColumnType, Column
+from .exceptions import PrimaryKeyError, NullValueError, EnumValueError, ArrayLengthWarning
 from .helper import acceptNone, splitArrayString
 from .protocols import DatabaseModel
 
@@ -61,9 +63,10 @@ class ForeignKey(ColumnType):
         self._rawType = column.rawType
 
     def __class_getitem__(cls, key: TABLE_OR_TABLE_COLUMN) -> 'ForeignKey':
+        # I really want match statements
         if isinstance(key, DatabaseModel):
             if key.__primary_key__ is None:
-                raise TypeError(f'{key} contains no primary key')
+                raise PrimaryKeyError(f'{key} contains no primary key')
             return cls(key, key.__schema_name__, key.__table_name__, key.__primary_key__)
         return cls(key[0], key[0].__schema_name__, key[0].__table_name__, key[0].getColumn(key[1]))
 
@@ -85,13 +88,13 @@ class ForeignKey(ColumnType):
 
     def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
         if self.model.__primary_key__ is None:
-            raise TypeError(f'{self.model} contains no primary key')
+            raise PrimaryKeyError(f'{self.model} contains no primary key')
 
         return self.model.instantiateFromPrimaryKey(conn, string)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if self.model.__primary_key__ is None:
-            raise TypeError(f'{self.model} contains no primary key')
+            raise PrimaryKeyError(f'{self.model} contains no primary key')
 
         # Data will be of type self.model so we can get the primary key of data and return it
         data.insertOrUpdate(conn)
@@ -144,8 +147,10 @@ class Array(ModifiedColumnType):
         self.length = length
 
     def __class_getitem__(cls, items: Union['ColumnType', Tuple['ColumnType', int]]) -> 'ModifiedColumnType':
+        # I really want match statements
         if type(items) == tuple:
             return cls(*items)
+
         return cls(cast('ColumnType', items))
 
     @property
@@ -159,12 +164,12 @@ class Array(ModifiedColumnType):
         if string is None:
             return None
 
-        items = [None if i == 'NULL' else i for i in splitArrayString(string)]
+        items = splitArrayString(string)
         
         if self.length is not None and len(items) != self.length:
-            raise ValueError(f'Expected {self.length} items, got {len(items)} ({string})')
+            warnings.warn(f'Expected {self.length} items, got {len(items)} ({string})', ArrayLengthWarning)
         
-        return list(self.type.convertDataFromString(conn, item) for item in items)
+        return list(self.type.convertDataFromString(conn, None if item == 'NULL' else item) for item in items)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if data is None:
@@ -189,7 +194,8 @@ class NotNull(ModifiedColumnType):
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if data is None:
-            raise TypeError('Attempted to fill not null field with null')
+            raise NullValueError('Attempted to fill NOT NULL field with null')
+
         return super().convertInsertableFromData(conn, data)
 
     def __str__(self) -> str:
@@ -248,8 +254,6 @@ class LiteralType(ColumnType):
         return self.type
 
     def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
-        if string is None:
-            return None
         return self.converter(string)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
@@ -294,10 +298,13 @@ class EnumType(ColumnType):
         return string
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
+        if data is None:
+            return None
+
         strData = str(data)
 
         if strData is not None and strData not in self.enums:
-            raise TypeError(f'Attempted to insert {strData} into enum {self.type} which only accepts {self.enums}')
+            raise EnumValueError(f'Attempted to insert {strData} into enum {self.type} which only accepts {self.enums}')
 
         return strData
 
@@ -363,6 +370,9 @@ class SentinelValue:
         self.name = name
 
     def __repr__(self) -> str:
+        return f'SentinelValue({self.name})'
+
+    def __str__(self) -> str:
         return self.name
 
 
