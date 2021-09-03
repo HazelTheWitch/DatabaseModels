@@ -101,5 +101,129 @@ class TestDatatypes(ConnectionUnitTest):
         self.assertEqual(m0, m1)
 
 
+class TestArrays(ConnectionUnitTest):
+    def setUp(self) -> None:
+        super().setUp()
+
+        @dbm.model('unittests', 'numericarrays')
+        @dataclass
+        class Numeric:
+            integer: NotNull[Array[INTEGER]] = NO_DEFAULT
+            real: NotNull[Array[REAL]] = NO_DEFAULT
+            numeric: NotNull[Array[NUMERIC(6, 3)]] = NO_DEFAULT
+
+        self.Numeric = Numeric
+
+        @dbm.model('unittests', 'stringarrays')
+        @dataclass
+        class String:
+            type: NotNull[Array[EnumType('type', ('A', 'B', 'C'))]] = NO_DEFAULT
+            text: NotNull[Array[TEXT]] = NO_DEFAULT
+            varchar: NotNull[Array[VARCHAR(16)]] = NO_DEFAULT
+            char: NotNull[Array[CHAR(16)]] = NO_DEFAULT
+
+        self.String = String
+
+        @dbm.model('unittests', 'timearrays')
+        @dataclass
+        class Time:
+            timestamp: NotNull[Array[TIMESTAMP]] = NO_DEFAULT
+            timestamp_tz: NotNull[Array[TIMESTAMP_WITH_TIMEZONE]] = NO_DEFAULT
+            date: NotNull[Array[DATE]] = NO_DEFAULT
+            time: NotNull[Array[TIME]] = NO_DEFAULT
+
+        self.Time = Time
+
+        @dbm.model('unittests', 'miscarrays')
+        @dataclass
+        class Misc:
+            boolean: NotNull[Array[BOOL]] = NO_DEFAULT
+
+        self.Misc = Misc
+
+        Numeric.createTable(self.conn, recreateTable=True)
+        String.createTable(self.conn, recreateTable=True)
+        Time.createTable(self.conn, recreateTable=True)
+        Misc.createTable(self.conn, recreateTable=True)
+
+    def test_numericarrays(self) -> None:
+        n0 = self.Numeric([1, 2], [1.5, 3.25], [123.456, 789.012])
+
+        n0.insert(self.conn)
+
+        n1 = self.Numeric.instatiateAll(self.conn)[0]
+
+        self.assertEqual(n0, n1)
+
+    def test_stringarrays(self) -> None:
+        s0 = self.String(['A', 'B'], ['This is some text', 'som,,,""\'\'{}{}}}{{e more'], ['this is short'], ['padded'])
+
+        s0.insert(self.conn)
+
+        s1 = self.String.instatiateAll(self.conn)[0]
+
+        self.assertEqual(s0, s1)
+
+    def test_timearrays(self) -> None:
+        tz = pytz.timezone('Pacific/Auckland')
+        timestamp = dt.datetime(2003, 10, 21, 20, 8, 47)
+        t0 = self.Time(
+            [timestamp],
+            [tz.localize(timestamp)],
+            [timestamp.date()],
+            [timestamp.time()],
+        )
+
+        t0.insert(self.conn)
+
+        t1 = self.Time.instatiateAll(self.conn)[0]
+
+        self.assertEqual(t0, t1)
+
+    def test_miscarrays(self) -> None:
+        m0 = self.Misc([False, True, True])
+
+        m0.insert(self.conn)
+
+        m1 = self.Misc.instatiateAll(self.conn)[0]
+
+        self.assertEqual(m0, m1)
+
+
+class TestMultiArrays(ConnectionUnitTest):
+    def setUp(self) -> None:
+        super().setUp()
+
+        @dbm.model('unittests', 'multiarray')
+        @dataclass
+        class MultiArray:
+            none: INTEGER = NO_DEFAULT
+            one: Array[INTEGER] = NO_DEFAULT
+            two: Array[Array[INTEGER]] = NO_DEFAULT
+            three: Array[Array[Array[INTEGER]]] = NO_DEFAULT
+            four: Array[Array[Array[Array[INTEGER]]]] = NO_DEFAULT
+            five: Array[Array[Array[Array[Array[INTEGER]]]]] = NO_DEFAULT
+
+        MultiArray.createTable(self.conn, recreateTable=True)
+
+        self.MultiArray = MultiArray
+
+    def test_multiArrays(self) -> None:
+        multi = self.MultiArray(
+            1,
+            [2, 3],
+            [[4, 5], [6, 7]],
+            [[[8, 9], [10, 11]], [[12, 13], [14, 15]]],
+            [[[[16, 17], [18, 19]], [[20, 21], [22, 23]]]],
+            [[[[[24, 25], [26, 27]], [[28, 29], [30, 31]]]]]
+        )
+
+        multi.insert(self.conn)
+
+        other = self.MultiArray.instatiateAll(self.conn)[0]
+
+        self.assertEqual(multi, other)
+
+
 if __name__ == '__main__':
     unittest.main()
