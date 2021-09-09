@@ -43,6 +43,10 @@ __all__ = [
     'CHAR',
     'NUMERIC',
 
+    'datatypeModifiers',
+    'constantDatatypes',
+    'customizableDatatypes',
+
     'AUTO_FILLED',
     'NO_DEFAULT',
 ]
@@ -322,6 +326,9 @@ class EnumType(ColumnType):
         self.type = type
         self.enums = enums
 
+    def __class_getitem__(cls, args: Tuple[str, Tuple[str, ...]]) -> 'EnumType':
+        return cls(*args)
+
     @property
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL(self.type)
@@ -413,6 +420,36 @@ def NUMERIC(precision: int, scale: int) -> 'LiteralType':
     assert scale >= 0
 
     return LiteralType(f'NUMERIC({precision}, {scale})', float, float)
+
+
+datatypeModifiers = [
+    ForeignKey,
+    Composite,
+    Array,
+    NotNull,
+    PrimaryKey,
+    Unique
+]
+
+constantDatatypes = [
+    INTEGER,
+    SERIAL,
+    REAL,
+    TEXT,
+    TIMESTAMP,
+    TIMESTAMP_WITH_TIMEZONE,
+    DATE,
+    TIME,
+    JSON,
+    JSONB,
+    BOOL
+]
+
+customizableDatatypes = [
+    VARCHAR,
+    CHAR,
+    NUMERIC
+]
 
 
 class SentinelValue:

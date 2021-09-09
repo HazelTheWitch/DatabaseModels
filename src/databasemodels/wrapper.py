@@ -98,12 +98,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 return cls.__column_definitions__[name]
 
             @classproperty
-            def primaryKey(cls: Type['DatabaseModel']) -> Optional['Column']:
+            def primaryKeyColumn(cls: Type['DatabaseModel']) -> Optional['Column']:
                 return cls.__primary_key__
 
             @property
-            def primaryKeyValue(self) -> Optional[Any]:
-                primary = self.primaryKey
+            def primaryKey(self) -> Optional[Any]:
+                primary = self.primaryKeyColumn
                 if primary is None:
                     return None
                 return getattr(self, primary.name)
@@ -157,11 +157,11 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     cur.execute(createTable)
 
             @classmethod
-            def instatiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['WrappedClass', ...]:
-                return tuple(cls.instatiate(conn, query))
+            def instantiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['WrappedClass', ...]:
+                return tuple(cls.instantiate(conn, query))
 
             @classmethod
-            def instatiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> \
+            def instantiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> \
                     Generator['WrappedClass', None, None]:
                 if isinstance(query, sql.Composable):
                     additionalQuery = query
@@ -196,7 +196,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 if cls.__primary_key__ is None:
                     raise PrimaryKeyError(f'Model {cls.__name__} has no primary key to instantiate from')
 
-                return cls.instatiateAll(conn, sql.SQL('WHERE {} = {}').format(
+                return cls.instantiateAll(conn, sql.SQL('WHERE {} = {}').format(
                     sql.Identifier(cls.__primary_key__.name),
                     sql.Literal(primaryKey)
                 ))[0]
@@ -231,7 +231,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     self._create(conn, cast(Tuple[Tuple[Any, ...]], record)[0])
 
             def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
-                primary = self.primaryKey
+                primary = self.primaryKeyColumn
 
                 if primary is None:
                     raise PrimaryKeyError('Can not update a database model without a primary key.')
@@ -250,22 +250,22 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                         list(map(sql.Literal, data))
                     ),
                     sql.Identifier(primary.name),
-                    sql.Literal(self.primaryKeyValue)
+                    sql.Literal(self.primaryKey)
                 )
 
                 with conn.cursor() as cur:
                     cur.execute(updateStatement)
 
             def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
-                if self.primaryKey is None:
+                if self.primaryKeyColumn is None:
                     raise PrimaryKeyError('Can not insert/update a database model without a primary key.')
 
-                if self.primaryKeyValue is None:
+                if self.primaryKey is None:
                     self.insert(conn, doTypeConversion=doTypeConversion)
 
-                instances = WrappedClass.instatiateAll(conn, sql.SQL('WHERE {} = {}').format(
-                    sql.Identifier(self.primaryKey.name),
-                    sql.Literal(self.primaryKeyValue)
+                instances = WrappedClass.instantiateAll(conn, sql.SQL('WHERE {} = {}').format(
+                    sql.Identifier(self.primaryKeyColumn.name),
+                    sql.Literal(self.primaryKey)
                 ))
 
                 if len(instances) == 0:

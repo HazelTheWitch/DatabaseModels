@@ -9,7 +9,7 @@ from datetime import datetime
 class Person:
     name: NotNull[TEXT] = NO_DEFAULT
     id: PrimaryKey[SERIAL] = AUTO_FILLED
-    gender: NotNull[EnumType('gender', ('male', 'female', 'nonbinary'))] = NO_DEFAULT
+    gender: NotNull[EnumType['gender', ('male', 'female', 'nonbinary')]] = NO_DEFAULT
     age: INTEGER = NO_DEFAULT
     favoriteNumbers: Array[INTEGER] = NO_DEFAULT
     data: Array[Array[TEXT]] = NO_DEFAULT
@@ -50,8 +50,8 @@ with conn:
         o0.insertOrUpdate(conn)
 
         print('Retrieved from Database')
-        print(*Person.instatiateAll(conn), sep='\n')
-        print(*Order.instatiateAll(conn))
+        print(*Person.instantiateAll(conn), sep='\n')
+        print(*Order.instantiateAll(conn))
         print()
 
         print('Original Objects')
@@ -76,6 +76,6 @@ with conn:
         o0.update(conn)
 
         print('Retrieved from Database')
-        print(*Person.instatiateAll(conn), sep='\n')
-        print(*Order.instatiateAll(conn))
+        print(*Person.instantiateAll(conn), sep='\n')
+        print(*Order.instantiateAll(conn))
         print()

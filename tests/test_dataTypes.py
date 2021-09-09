@@ -62,7 +62,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         n0.insert(self.conn)
 
-        n1 = self.Numeric.instatiateAll(self.conn)[0]
+        n1 = self.Numeric.instantiateAll(self.conn)[0]
 
         self.assertEqual(n0, n1)
 
@@ -71,7 +71,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         s0.insert(self.conn)
 
-        s1 = self.String.instatiateAll(self.conn)[0]
+        s1 = self.String.instantiateAll(self.conn)[0]
 
         self.assertEqual(s0, s1)
 
@@ -87,7 +87,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         t0.insert(self.conn)
 
-        t1 = self.Time.instatiateAll(self.conn)[0]
+        t1 = self.Time.instantiateAll(self.conn)[0]
 
         self.assertEqual(t0, t1)
 
@@ -96,7 +96,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         m0.insert(self.conn)
 
-        m1 = self.Misc.instatiateAll(self.conn)[0]
+        m1 = self.Misc.instantiateAll(self.conn)[0]
 
         self.assertEqual(m0, m1)
 
@@ -151,7 +151,7 @@ class TestArrays(ConnectionUnitTest):
 
         n0.insert(self.conn)
 
-        n1 = self.Numeric.instatiateAll(self.conn)[0]
+        n1 = self.Numeric.instantiateAll(self.conn)[0]
 
         self.assertEqual(n0, n1)
 
@@ -160,7 +160,7 @@ class TestArrays(ConnectionUnitTest):
 
         s0.insert(self.conn)
 
-        s1 = self.String.instatiateAll(self.conn)[0]
+        s1 = self.String.instantiateAll(self.conn)[0]
 
         self.assertEqual(s0, s1)
 
@@ -176,7 +176,7 @@ class TestArrays(ConnectionUnitTest):
 
         t0.insert(self.conn)
 
-        t1 = self.Time.instatiateAll(self.conn)[0]
+        t1 = self.Time.instantiateAll(self.conn)[0]
 
         self.assertEqual(t0, t1)
 
@@ -185,7 +185,7 @@ class TestArrays(ConnectionUnitTest):
 
         m0.insert(self.conn)
 
-        m1 = self.Misc.instatiateAll(self.conn)[0]
+        m1 = self.Misc.instantiateAll(self.conn)[0]
 
         self.assertEqual(m0, m1)
 
@@ -220,7 +220,7 @@ class TestMultiArrays(ConnectionUnitTest):
 
         multi.insert(self.conn)
 
-        other = self.MultiArray.instatiateAll(self.conn)[0]
+        other = self.MultiArray.instantiateAll(self.conn)[0]
 
         self.assertEqual(multi, other)
 
@@ -243,7 +243,7 @@ class TestComposites(ConnectionUnitTest):
 
         c0.insert(self.conn)
 
-        c1 = self.CompositeTypes.instatiateAll(self.conn)[0]
+        c1 = self.CompositeTypes.instantiateAll(self.conn)[0]
 
         self.assertEqual(c0, c1)
         self.assertNotEqual(c0, self.CompositeTypes((2.0, 3.0)))

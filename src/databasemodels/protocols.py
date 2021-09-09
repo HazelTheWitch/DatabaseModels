@@ -46,7 +46,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classmethod
-    def instatiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['DatabaseModel', ...]:
+    def instantiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['DatabaseModel', ...]:
         """
         Instantiate all models of this type with the given query.
 
@@ -60,7 +60,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classmethod
-    def instatiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
+    def instantiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
         """
         Instantiate each models of this type with the given query as a generator.
 
@@ -76,7 +76,7 @@ class DatabaseModel(Dataclass, Protocol):
     @classmethod
     def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
         """
-        Instantiate a model from a given primary key. The model must have a primary key and the given primaryKeyValue
+        Instantiate a model from a given primary key. The model must have a primary key and the given primaryKeyColumn
         must correspond to a value.
 
         :param conn: the connection to use
@@ -136,7 +136,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classproperty
-    def primaryKey(cls: Type['DatabaseModel']) -> Optional['Column']:
+    def primaryKeyColumn(cls: Type['DatabaseModel']) -> Optional['Column']:
         """
         Get the primary key for this model or model type.
 
@@ -146,7 +146,7 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @property
-    def primaryKeyValue(self) -> Optional[Any]:
+    def primaryKey(self) -> Optional[Any]:
         """
         Get this model's primary key value or None if there is no primary key.
 

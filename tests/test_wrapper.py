@@ -53,8 +53,8 @@ class TestGetters(unittest.TestCase):
             self.pear.getColumn('non_existant')
 
     def test_primaryKey(self) -> None:
-        self.assertEqual(self.pear.getColumn('id'), self.pear.primaryKey)
-        self.assertEqual(self.pear.getColumn('id'), self.Fruit.primaryKey)
+        self.assertEqual(self.pear.getColumn('id'), self.pear.primaryKeyColumn)
+        self.assertEqual(self.pear.getColumn('id'), self.Fruit.primaryKeyColumn)
 
     def test_schema(self) -> None:
         self.assertEqual(self.pear.schema, 'unittests')
@@ -149,8 +149,8 @@ class TestInstantiation(ConnectionUnitTest):
 
         order.insert(self.conn)
 
-        self.assertEqual(self.Order.instatiateAll(self.conn)[0], order)
-        self.assertFalse(self.Order.instatiateAll(self.conn)[0] is order)
+        self.assertEqual(self.Order.instantiateAll(self.conn)[0], order)
+        self.assertFalse(self.Order.instantiateAll(self.conn)[0] is order)
 
 
 if __name__ == '__main__':

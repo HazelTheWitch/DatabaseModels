@@ -24,9 +24,6 @@ __all__ = [
 ]
 
 
-PATH_LIKE = Union[Union[str, PathLike[str]], 'Path']
-
-
 class Login(TypedDict):
     dbname: str
     user: str
@@ -35,7 +32,7 @@ class Login(TypedDict):
     port: int
 
 
-def processPath(pathlike: PATH_LIKE) -> 'Path':
+def processPath(pathlike: PathLike) -> 'Path':
     if isinstance(pathlike, Path):
         return pathlike
     return Path(pathlike)
@@ -56,15 +53,15 @@ def connectWithLogin(login: Login) -> 'connection.Connection[Any]':
     return connect(**login)
 
 
-def connectUsingLoginFunc(func: Callable[[PATH_LIKE], Login]) -> Callable[[PATH_LIKE], 'connection.Connection[Any]']:
+def connectUsingLoginFunc(func: Callable[[PathLike], Login]) -> Callable[[PathLike], 'connection.Connection[Any]']:
     @wraps(func)
-    def wrapper(filePath: PATH_LIKE) -> 'connection.Connection[Any]':
+    def wrapper(filePath: PathLike) -> 'connection.Connection[Any]':
         return connectWithLogin(func(filePath))
 
     return wrapper
 
 
-def createLogin(filePath: PATH_LIKE) -> Login:
+def createLogin(filePath: PathLike) -> Login:
     path = processPath(filePath)
 
     login = dict(
@@ -81,14 +78,14 @@ def createLogin(filePath: PATH_LIKE) -> Login:
     return cast(Login, login)
 
 
-def loadLogin(filePath: PATH_LIKE) -> Login:
+def loadLogin(filePath: PathLike) -> Login:
     path = processPath(filePath)
 
     with path.open('rb') as loginFile:
         return cast(Login, pickle.load(loginFile))
 
 
-def createOrLoadLogin(filePath: PATH_LIKE) -> Login:
+def createOrLoadLogin(filePath: PathLike) -> Login:
     path = processPath(filePath)
 
     if path.exists():
