@@ -1,6 +1,6 @@
 from collections import OrderedDict as OD
 from dataclasses import fields, MISSING
-from typing import Callable, Any, List, Type, Optional, OrderedDict, Dict, Generator, cast, Tuple, Union
+from typing import Callable, Any, List, Type, Optional, OrderedDict, Dict, Generator, cast, Tuple, Union, ContextManager
 
 from psycopg import connection, sql
 
@@ -13,6 +13,19 @@ from .columns import Column
 from .exceptions import PrimaryKeyError, FieldDefaultValueError
 from .protocols import Dataclass, DatabaseModel
 from .helper import classproperty
+
+
+class MutationContext:
+    def __init__(self, connection: 'connection.Connection[Any]', model: 'DatabaseModel') -> None:
+        self.connection = connection
+        self.model = model
+
+    def __enter__(self) -> None:
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if exc_type is None:
+            self.model.insertOrUpdate(self.connection)
 
 
 def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
@@ -300,6 +313,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     self.insert(conn, doTypeConversion=doTypeConversion)
                 else:
                     self.update(conn, doTypeConversion=doTypeConversion)
+
+            def mutate(self, conn: 'connection.Connection[Any]') -> ContextManager[None]:
+                return MutationContext(conn, self)
 
         miniLocals: Dict[str, Callable[..., None]] = {}
 

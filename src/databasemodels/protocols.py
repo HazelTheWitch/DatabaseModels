@@ -1,6 +1,6 @@
 from dataclasses import Field
 from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, runtime_checkable, Protocol, Dict, OrderedDict, \
-    Generator, Type, List
+    Generator, Type, List, ContextManager
 
 from psycopg import sql
 
@@ -184,5 +184,14 @@ class DatabaseModel(Dataclass, Protocol):
 
         :return: a list of columns
         :rtype: List[Column]
+        """
+        ...
+
+    def mutate(self, conn: 'connection.Connection[Any]') -> ContextManager[None]:
+        """
+        Enter a context manager which inserts or updates the model at the end of it if no errors occurred
+
+        :param conn: the connection to use
+        :type conn: connection.Connection
         """
         ...

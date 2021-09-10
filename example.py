@@ -58,20 +58,17 @@ with conn:
         print(p0, p1, p2, o0, sep='\n')
         print()
 
-        p0.favoriteNumbers = [17]
-        p1.age = 21
+        with p0.mutate(conn):
+            p0.favoriteNumbers = [17]
 
-        p2.age = 20
+        with p1.mutate(conn):
+            p1.age = 21
 
-        o0.fulfilled = True
+        with p2.mutate(conn):
+            p2.age = 20
 
-        # p0.update is implicitly called within o0.update so no need to update here but cleaner to
-        p0.update(conn)
-
-        p1.update(conn)
-        p2.update(conn)
-
-        o0.update(conn)
+        with o0.mutate(conn):
+            o0.fulfilled = True
 
         print('Retrieved from Database')
         print(*Person.instantiateAll(conn), sep='\n')
