@@ -31,6 +31,8 @@ class DatabaseModel(Dataclass, Protocol):
     __schema_name__: str
     __table_name__: str
 
+    __instance_cache__: Dict[Any, 'DatabaseModel']
+
     @classmethod
     def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False, recreateTable: bool = False) -> None:
         """

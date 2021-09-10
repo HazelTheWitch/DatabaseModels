@@ -30,6 +30,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
         columnDefinitions: OrderedDict[str, 'Column'] = OD()
         _primaryKey: Optional['Column'] = None
+        primaryKeyIndex: Optional[int] = None
 
         argsNames: List[str] = []
         allFieldsName: List[str] = []
@@ -49,6 +50,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 if _primaryKey is not None:
                     raise PrimaryKeyError(f'{schemaName}.{tableName} ({cls.__name__}) Has two primary keys defined')
                 _primaryKey = definition
+                primaryKeyIndex = i
 
             if not (field.default is MISSING or field.default is NO_DEFAULT or field.default is AUTO_FILLED):
                 raise FieldDefaultValueError(f'{field.name} does not declare default type of MISSING, NO_DEFAULT, '
@@ -71,13 +73,10 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             __schema_name__: str = schemaName
             __table_name__: str = tableName
 
-            def _create(self, conn: 'connection.Connection[Any]', record: Union[Any, Tuple[Any, ...]]) -> None:
+            __instance_cache__: Dict[Any, 'WrappedClass'] = {}
+
+            def _create(self, conn: 'connection.Connection[Any]', record: Tuple[Any, ...]) -> None:
                 kwargs = {}
-
-                if type(record) != tuple:
-                    record = (record,)
-
-                record = cast(Tuple[str, ...], record)
 
                 for kc, v in zip(WrappedClass.__column_definitions__.items(), record):
                     k, c = kc
@@ -89,6 +88,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             def __str__(self) -> str:
                 dictlike = ', '.join(f'{a}={getattr(self, a)}' for a in self.__column_definitions__.keys())
                 return f'{self.__schema_name__}.{self.__table_name__}({dictlike})'
+
+            def __repr__(self) -> str:
+                return str(self)
 
             def __dir__(self) -> List[str]:
                 return list(set(dir(type(self)) + list(self.__dict__.keys())))
@@ -182,12 +184,28 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     record = cur.fetchone()
 
                     while record is not None:
-                        # Abuse duck-typing to get "2 init methods" sort of
-                        obj = cls(*argsNames)
+                        record = record[0]
+                        if type(record) != tuple:
+                            record = (record,)
 
-                        obj._create(conn, record[0])
+                        if cls.__primary_key__ is None:
+                            # Abuse duck-typing to get "2 init methods" sort of
+                            obj = cls(*argsNames)
 
-                        yield obj
+                            obj._create(conn, record)
+
+                            yield obj
+                        else:
+                            primaryKey = cls.__primary_key__.type.convertDataFromString(conn, record[primaryKeyIndex])
+
+                            if primaryKey not in cls.__instance_cache__:
+                                obj = cls(*argsNames)
+
+                                obj._create(conn, record)
+
+                                cls.__instance_cache__[primaryKey] = obj
+
+                            yield cls.__instance_cache__[primaryKey]
 
                         record = cur.fetchone()
 
@@ -195,6 +213,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
                 if cls.__primary_key__ is None:
                     raise PrimaryKeyError(f'Model {cls.__name__} has no primary key to instantiate from')
+
+                if primaryKey in cls.__instance_cache__:
+                    return cls.__instance_cache__[primaryKey]
 
                 return cls.instantiateAll(conn, sql.SQL('WHERE {} = {}').format(
                     sql.Identifier(cls.__primary_key__.name),
@@ -226,9 +247,15 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     cur.execute(insertStatement)
 
                     # After insertion of this object go back and fill in any defaulted fields
-                    record = cur.fetchone()
+                    record = cur.fetchone()[0]
 
-                    self._create(conn, cast(Tuple[Tuple[Any, ...]], record)[0])
+                    if type(record) != tuple:
+                        record = (record,)
+
+                    self._create(conn, record)
+
+                    if self.__primary_key__ is not None:
+                        self.__instance_cache__[self.primaryKey] = self
 
             def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
                 primary = self.primaryKeyColumn
@@ -262,6 +289,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                 if self.primaryKey is None:
                     self.insert(conn, doTypeConversion=doTypeConversion)
+                    return
 
                 instances = WrappedClass.instantiateAll(conn, sql.SQL('WHERE {} = {}').format(
                     sql.Identifier(self.primaryKeyColumn.name),

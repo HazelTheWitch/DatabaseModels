@@ -58,17 +58,15 @@ with conn:
         print(p0, p1, p2, o0, sep='\n')
         print()
 
-        # Update within the object because no reference exists to it within p0
-        # A bit weird but works
-        o0.customerID.favoriteNumbers = [17]
+        p0.favoriteNumbers = [17]
         p1.age = 21
 
         p2.age = 20
 
         o0.fulfilled = True
 
-        # p0.update is implicitly called within o0.update so no need to update here
-        # p0.update(conn)
+        # p0.update is implicitly called within o0.update so no need to update here but cleaner to
+        p0.update(conn)
 
         p1.update(conn)
         p2.update(conn)
