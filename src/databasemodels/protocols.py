@@ -62,6 +62,20 @@ class DatabaseModel(Dataclass, Protocol):
         ...
 
     @classmethod
+    def instantiateOne(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> 'DatabaseModel':
+        """
+        Instantiate one model of this type with the given query.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :param query: the additional query to use after the select statement
+        :type query: Union[str, sql.Composable]
+        :return: a model
+        :rtype: DatabaseModel
+        """
+        ...
+
+    @classmethod
     def instantiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
         """
         Instantiate each models of this type with the given query as a generator.

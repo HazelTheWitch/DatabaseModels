@@ -20,12 +20,18 @@ class MutationContext:
         self.connection = connection
         self.model = model
 
+        self.data = {}
+
     def __enter__(self) -> None:
-        pass
+        for f in fields(self.model):
+            self.data[f.name] = getattr(self.model, f.name)
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         if exc_type is None:
             self.model.insertOrUpdate(self.connection)
+        else:
+            for k, v in self.data.items():
+                setattr(self.model, k, v)
 
 
 def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
@@ -174,6 +180,10 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
             @classmethod
             def instantiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['WrappedClass', ...]:
                 return tuple(cls.instantiate(conn, query))
+
+            @classmethod
+            def instantiateOne(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> 'WrappedClass':
+                return next(cls.instantiate(conn, query))
 
             @classmethod
             def instantiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> \
