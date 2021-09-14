@@ -1,22 +1,28 @@
 from src import databasemodels as dbm
 from src.databasemodels.datatypes import *
-from dataclasses import dataclass
 from datetime import datetime
 
 
+from enum import Enum
+
+
+class Gender(Enum):
+    Male = 1
+    Female = 2
+    Nonbinary = 3
+
+
 @dbm.model('example', 'people')
-@dataclass()
 class Person:
     name: NotNull[TEXT] = NO_DEFAULT
     id: PrimaryKey[SERIAL] = AUTO_FILLED
-    gender: NotNull[EnumType['gender', ('male', 'female', 'nonbinary')]] = NO_DEFAULT
+    gender: NotNull[EnumType[Gender]] = NO_DEFAULT
     age: INTEGER = NO_DEFAULT
     favoriteNumbers: Array[INTEGER] = NO_DEFAULT
     data: Array[Array[TEXT]] = NO_DEFAULT
 
 
 @dbm.model('example', 'orders')
-@dataclass()
 class Order:
     id: PrimaryKey[SERIAL] = AUTO_FILLED
     customerID: ForeignKey[Person, 'id'] = NO_DEFAULT
@@ -35,7 +41,7 @@ with conn:
 
         p0 = Person('Hazel', 'female', 20, [1, 2, 3], [['{{a', 'b"""'], ['c', 'd']])
         p1 = Person('Hunter', 'male', 20, ['3', None], None)
-        p2 = Person('Dacota', 'nonbinary', 19, [32], [['a', 'b'], ['c', 'd']])
+        p2 = Person('Dacota', Gender.Nonbinary, 19, [32], [['a', 'b'], ['c', 'd']])
 
         o0 = Order(p0, 3, datetime.now(), False, {'a': True, 'b': [1.2, 3.4]})
 

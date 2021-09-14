@@ -2,7 +2,8 @@ import datetime
 import json
 import warnings
 from abc import ABC
-from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, Callable, cast
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, Callable, cast, Type
 
 from iso8601 import parse_date
 from psycopg import sql
@@ -322,12 +323,20 @@ class EnumType(ColumnType):
     A constructed type that can only be one of a few values.
     """
 
-    def __init__(self, type: str, enums: Tuple[str, ...]) -> None:
-        self.type = type
-        self.enums = enums
+    def __init__(self, enumType: Type[Enum]) -> None:
+        self.enumType = enumType
+        self.type = enumType.__name__.lower()
+        self.enums = tuple(t.name.lower() for t in enumType)
 
-    def __class_getitem__(cls, args: Tuple[str, Tuple[str, ...]]) -> 'EnumType':
-        return cls(*args)
+        self._enumConversion = {t.name.lower(): t.name for t in enumType}
+
+    def __class_getitem__(cls, args: Union[Type[Enum], Tuple[str, Tuple[str, ...]]]) -> 'EnumType':
+        if type(args) == tuple:
+            return cls(Enum(*args))
+        elif issubclass(args, Enum):
+            return cls(args)
+        else:
+            raise TypeError(f'{args} is not an enum or enum definition.')
 
     @property
     def typeStatement(self) -> 'sql.Composable':
@@ -352,18 +361,19 @@ class EnumType(ColumnType):
         return self.type
 
     def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
-        return string
+        return self.enumType[self._enumConversion[string]]
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if data is None:
             return None
 
-        strData = str(data)
+        if type(data) == str:
+            data = self.enumType[self._enumConversion[data]]
 
-        if strData is not None and strData not in self.enums:
-            raise EnumValueError(f'Attempted to insert {strData} into enum {self.type} which only accepts {self.enums}')
+        if not isinstance(data, self.enumType):
+            raise EnumValueError(f'Attempted to insert {data} into enum {self.type} which only accepts {self.enums}')
 
-        return strData
+        return data.name.lower()
 
     def __str__(self) -> str:
         return self.type

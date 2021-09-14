@@ -1,3 +1,4 @@
+import dataclasses
 from collections import OrderedDict as OD
 from dataclasses import fields, MISSING
 from typing import Callable, Any, List, Type, Optional, OrderedDict, Dict, Generator, cast, Tuple, Union, ContextManager
@@ -36,7 +37,10 @@ class MutationContext:
 
 def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         Callable[[Type['Dataclass']], Type['DatabaseModel']]:
-    def wrapped(cls: Type['Dataclass']) -> Type['DatabaseModel']:
+    def wrapped(cls: Union[Type['Dataclass'], Type]) -> Type['DatabaseModel']:
+        if not isinstance(cls, Dataclass):
+            cls = dataclasses.dataclass(cls)
+
         if _table is None:
             tableName = cls.__name__.lower()
         else:
@@ -339,7 +343,6 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         WrappedClass.__module__ = cls.__module__
         WrappedClass.__name__ = cls.__name__
         WrappedClass.__qualname__ = cls.__qualname__
-        WrappedClass.__annotations__.update(cls.__annotations__)
         WrappedClass.__doc__ = cls.__doc__
 
         return WrappedClass
