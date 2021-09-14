@@ -332,9 +332,9 @@ class EnumType(ColumnType):
 
     def __class_getitem__(cls, args: Union[Type[Enum], Tuple[str, Tuple[str, ...]]]) -> 'EnumType':
         if type(args) == tuple:
-            return cls(Enum(*args))
-        elif issubclass(args, Enum):
-            return cls(args)
+            return cls(cast(Type[Enum], Enum(*args)))
+        elif issubclass(cast(Type[Enum], args), Enum):
+            return cls(cast(Type[Enum], args))
         else:
             raise TypeError(f'{args} is not an enum or enum definition.')
 
@@ -361,6 +361,9 @@ class EnumType(ColumnType):
         return self.type
 
     def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
+        if string is None:
+            return None
+
         return self.enumType[self._enumConversion[string]]
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:

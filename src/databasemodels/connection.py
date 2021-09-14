@@ -32,7 +32,7 @@ class Login(TypedDict):
     port: int
 
 
-def processPath(pathlike: PathLike) -> 'Path':
+def processPath(pathlike: PathLike[str]) -> 'Path':
     if isinstance(pathlike, Path):
         return pathlike
     return Path(pathlike)
@@ -53,15 +53,15 @@ def connectWithLogin(login: Login) -> 'connection.Connection[Any]':
     return connect(**login)
 
 
-def connectUsingLoginFunc(func: Callable[[PathLike], Login]) -> Callable[[PathLike], 'connection.Connection[Any]']:
+def connectUsingLoginFunc(func: Callable[[PathLike[str]], Login]) -> Callable[[PathLike[str]], 'connection.Connection[Any]']:
     @wraps(func)
-    def wrapper(filePath: PathLike) -> 'connection.Connection[Any]':
+    def wrapper(filePath: PathLike[str]) -> 'connection.Connection[Any]':
         return connectWithLogin(func(filePath))
 
     return wrapper
 
 
-def createLogin(filePath: PathLike) -> Login:
+def createLogin(filePath: PathLike[str]) -> Login:
     path = processPath(filePath)
 
     login = dict(
@@ -78,14 +78,14 @@ def createLogin(filePath: PathLike) -> Login:
     return cast(Login, login)
 
 
-def loadLogin(filePath: PathLike) -> Login:
+def loadLogin(filePath: PathLike[str]) -> Login:
     path = processPath(filePath)
 
     with path.open('rb') as loginFile:
         return cast(Login, pickle.load(loginFile))
 
 
-def createOrLoadLogin(filePath: PathLike) -> Login:
+def createOrLoadLogin(filePath: PathLike[str]) -> Login:
     path = processPath(filePath)
 
     if path.exists():

@@ -21,13 +21,13 @@ class MutationContext:
         self.connection = connection
         self.model = model
 
-        self.data = {}
+        self.data: Dict[str, Any] = {}
 
     def __enter__(self) -> None:
         for f in fields(self.model):
             self.data[f.name] = getattr(self.model, f.name)
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if exc_type is None:
             self.model.insertOrUpdate(self.connection)
         else:
@@ -37,7 +37,7 @@ class MutationContext:
 
 def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
         Callable[[Type['Dataclass']], Type['DatabaseModel']]:
-    def wrapped(cls: Union[Type['Dataclass'], Type]) -> Type['DatabaseModel']:
+    def wrapped(cls: Union[Type['Dataclass'], Type[Any]]) -> Type['DatabaseModel']:
         if not isinstance(cls, Dataclass):
             cls = dataclasses.dataclass(cls)
 
@@ -274,7 +274,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                     cur.execute(insertStatement)
 
                     # After insertion of this object go back and fill in any defaulted fields
-                    record = cur.fetchone()[0]
+                    record = cast(Tuple[Any], cur.fetchone())[0]
 
                     if type(record) != tuple:
                         record = (record,)
