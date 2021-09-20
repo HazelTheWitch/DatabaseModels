@@ -18,7 +18,8 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'psycopg',
+        'psycopg_binary',
         'iso8601',
-        'typing_extensions'
+        'typing_extensions',
     ]
 )
