@@ -1,6 +1,8 @@
 from dataclasses import Field
-from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, runtime_checkable, Protocol, Dict, OrderedDict, \
+from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, Dict, OrderedDict, \
     Generator, Type, List, ContextManager
+
+from typing_extensions import Protocol
 
 from psycopg import sql
 
@@ -16,14 +18,12 @@ __all__ = [
 ]
 
 
-@runtime_checkable
 class Dataclass(Protocol):
     __dataclass_fields__: Dict[str, 'Field[Any]']
 
 
 # Properties gave warnings in PyCharm, this disables checking that inspection
 # noinspection PyPropertyDefinition
-@runtime_checkable
 class DatabaseModel(Dataclass, Protocol):
     __column_definitions__: OrderedDict[str, 'Column']
     __primary_key__: Optional['Column']

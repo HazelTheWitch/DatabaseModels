@@ -9,13 +9,13 @@ shortDescription = description.split('\n')[2]
 
 setup(
     name='databasemodels',
-    version='1.3.1',
+    version='1.3.2',
     description=shortDescription,
     long_description=description,
     long_description_content_type='text/markdown',
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
-    python_requires='>=3.9',
+    python_requires='>=3.7',
     install_requires=[
         'psycopg',
         'iso8601',
