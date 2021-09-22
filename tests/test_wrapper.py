@@ -7,6 +7,18 @@ from src.databasemodels.datatypes import *
 
 from helper import ConnectionUnitTest
 
+from enum import Enum
+
+
+class Color(Enum):
+    RED = 'red',
+    ORANGE = 'orange',
+    YELLOW = 'yellow',
+    GREEN = 'green',
+    BLUE = 'blue',
+    INDIGO = 'indigo',
+    VIOLET = 'violet'
+
 
 class TestDecorator(ConnectionUnitTest):
     def setUp(self) -> None:
@@ -18,7 +30,7 @@ class TestDecorator(ConnectionUnitTest):
             id: PrimaryKey[SERIAL] = AUTO_FILLED
             name: TEXT = NO_DEFAULT
             weight: REAL = NO_DEFAULT
-            color: EnumType('color', ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')) = NO_DEFAULT
+            color: EnumType[Color] = NO_DEFAULT
 
         self.Fruit = Fruit
 
@@ -38,7 +50,7 @@ class TestGetters(unittest.TestCase):
             id: PrimaryKey[SERIAL] = AUTO_FILLED
             name: TEXT = NO_DEFAULT
             weight: REAL = NO_DEFAULT
-            color: EnumType('color', ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')) = NO_DEFAULT
+            color: EnumType[Color] = NO_DEFAULT
 
         self.pear = Fruit('Pear', 3, 'yellow')
         self.Fruit = Fruit
@@ -75,7 +87,7 @@ class TestCreation(ConnectionUnitTest):
             id: PrimaryKey[SERIAL] = AUTO_FILLED
             name: TEXT = NO_DEFAULT
             weight: REAL = NO_DEFAULT
-            color: EnumType('color', ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')) = NO_DEFAULT
+            color: EnumType[Color] = NO_DEFAULT
 
         @dbm.model('unittests', 'fruitbaskets')
         @dataclass
@@ -102,7 +114,7 @@ class TestInstantiation(ConnectionUnitTest):
             id: PrimaryKey[SERIAL] = AUTO_FILLED
             name: TEXT = NO_DEFAULT
             weight: REAL = NO_DEFAULT
-            color: EnumType('color', ('red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet')) = NO_DEFAULT
+            color: EnumType[Color] = NO_DEFAULT
 
         @dbm.model('unittests', 'users')
         @dataclass
@@ -133,13 +145,13 @@ class TestInstantiation(ConnectionUnitTest):
             self.Product(
                 'Shovel',
                 1.5,
-                'red'
+                Color.RED
             ),
             self.User(
                 self.Product(
                     'Hammer',
                     2.3,
-                    'yellow'
+                    Color.YELLOW
                 ),
                 'Hazel',
                 'localhost'  # :)
@@ -150,7 +162,6 @@ class TestInstantiation(ConnectionUnitTest):
         order.insert(self.conn)
 
         self.assertEqual(self.Order.instantiateAll(self.conn)[0], order)
-        self.assertFalse(self.Order.instantiateAll(self.conn)[0] is order)
 
 
 if __name__ == '__main__':

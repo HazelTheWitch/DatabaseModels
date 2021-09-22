@@ -10,6 +10,14 @@ from helper import ConnectionUnitTest
 import datetime as dt
 import pytz
 
+from enum import Enum
+
+
+class EnumExample(Enum):
+    A = 1,
+    B = 2,
+    C = 3
+
 
 class TestDatatypes(ConnectionUnitTest):
     def setUp(self) -> None:
@@ -28,7 +36,7 @@ class TestDatatypes(ConnectionUnitTest):
         @dbm.model('unittests', 'strings')
         @dataclass
         class String:
-            type: NotNull[EnumType('type', ('A', 'B', 'C'))] = NO_DEFAULT
+            type: NotNull[EnumType[EnumExample]] = NO_DEFAULT
             text: NotNull[TEXT] = NO_DEFAULT
             varchar: NotNull[VARCHAR(16)] = NO_DEFAULT
             char: NotNull[CHAR(16)] = NO_DEFAULT
@@ -67,7 +75,7 @@ class TestDatatypes(ConnectionUnitTest):
         self.assertEqual(n0, n1)
 
     def test_strings(self) -> None:
-        s0 = self.String('A', 'This is some text', 'this is short', 'padded')
+        s0 = self.String(EnumExample.A, 'This is some text', 'this is short', 'padded')
 
         s0.insert(self.conn)
 
@@ -117,7 +125,7 @@ class TestArrays(ConnectionUnitTest):
         @dbm.model('unittests', 'stringarrays')
         @dataclass
         class String:
-            type: NotNull[Array[EnumType('type', ('A', 'B', 'C'))]] = NO_DEFAULT
+            type: NotNull[Array[EnumType[EnumExample]]] = NO_DEFAULT
             text: NotNull[Array[TEXT]] = NO_DEFAULT
             varchar: NotNull[Array[VARCHAR(16)]] = NO_DEFAULT
             char: NotNull[Array[CHAR(16)]] = NO_DEFAULT
@@ -156,7 +164,7 @@ class TestArrays(ConnectionUnitTest):
         self.assertEqual(n0, n1)
 
     def test_stringarrays(self) -> None:
-        s0 = self.String(['A', 'B'], ['This is some text', 'som,,,""\'\'{}{}}}{{e more'], ['this is short'], ['padded'])
+        s0 = self.String([EnumExample.A, EnumExample.B], ['This is some text', 'som,,,""\'\'{}{}}}{{e more'], ['this is short'], ['padded'])
 
         s0.insert(self.conn)
 
