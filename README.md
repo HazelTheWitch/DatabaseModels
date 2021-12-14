@@ -1,6 +1,6 @@
 # Database Models
 
-Python class decorator that creates a database representation of a class.
+Python class decorator that creates a database representation of a class and vice versa, a lightweight ORM.
 `setup.py` provided for installation, uses psycopg 3 rather than 2 for the
 better context manager support and type hinting.
 
@@ -45,13 +45,9 @@ NotNull
 
 ## Planned Features
 
- - JSON type
- - Array types
  - Interval type
- - Composite type
  - Full documentation across all the module
  - Implementation of all types listed [here](https://www.postgresql.org/docs/12/datatype.html).
  - "Mutation" context managers for database model instances
  - Higher unittest coverage
  - Higher customizability with table creation and other database operations
- - Experiment with swapping order of decorators to hopefully get auto-complete
