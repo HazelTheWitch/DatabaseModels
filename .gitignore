@@ -2,3 +2,6 @@
 **/__pycache__/
 
 login.pkl
+
+/build/
+/dist/

@@ -45,7 +45,6 @@ class DatabaseModel(Dataclass, Protocol):
         :param recreateTable: if true it will drop the table before recreating it. This will drop any other tables that depend on it
         :type recreateTable: bool
         """
-        ...
 
     @classmethod
     def instantiateAll(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Tuple['DatabaseModel', ...]:
@@ -59,7 +58,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: a tuple of every model returned from the query
         :rtype: Tuple[DatabaseModel, ...]
         """
-        ...
 
     @classmethod
     def instantiateOne(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> 'DatabaseModel':
@@ -73,7 +71,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: a model
         :rtype: DatabaseModel
         """
-        ...
 
     @classmethod
     def instantiate(cls, conn: 'connection.Connection[Any]', query: Union[str, 'sql.Composable'] = '') -> Generator['DatabaseModel', None, None]:
@@ -87,7 +84,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: a tuple of every model returned from the query
         :rtype: Tuple[DatabaseModel, ...]
         """
-        ...
 
     @classmethod
     def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
@@ -102,7 +98,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: the model
         :rtype: DatabaseModel
         """
-        ...
 
     def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
         """
@@ -113,7 +108,6 @@ class DatabaseModel(Dataclass, Protocol):
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
         """
-        ...
 
     def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
         """
@@ -125,7 +119,6 @@ class DatabaseModel(Dataclass, Protocol):
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
         """
-        ...
 
     def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
         """
@@ -137,7 +130,6 @@ class DatabaseModel(Dataclass, Protocol):
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
         """
-        ...
 
     @classmethod
     def getColumn(cls, name: str) -> 'Column':
@@ -149,17 +141,15 @@ class DatabaseModel(Dataclass, Protocol):
         :return: the column with the given name
         :rtype: Column
         """
-        ...
 
     @classproperty
-    def primaryKeyColumn(cls: Type['DatabaseModel']) -> Optional['Column']:
+    def primaryKeyColumn(cls) -> Optional['Column']:
         """
         Get the primary key for this model or model type.
 
         :return: either the primary key column or None
         :rtype: Optional[Column]
         """
-        ...
 
     @property
     def primaryKey(self) -> Optional[Any]:
@@ -169,7 +159,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: the primary key value
         :rtype: Optional[Any]
         """
-        ...
 
     @classproperty
     def schema(cls: Type['DatabaseModel']) -> str:
@@ -179,7 +168,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: the schema this model uses
         :rtype: str
         """
-        ...
 
     @classproperty
     def table(cls: Type['DatabaseModel']) -> str:
@@ -189,7 +177,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: the table name this model uses
         :rtype: str
         """
-        ...
 
     @classproperty
     def columns(cls: Type['DatabaseModel']) -> List['Column']:
@@ -199,7 +186,6 @@ class DatabaseModel(Dataclass, Protocol):
         :return: a list of columns
         :rtype: List[Column]
         """
-        ...
 
     def mutate(self, conn: 'connection.Connection[Any]') -> ContextManager[None]:
         """
@@ -208,4 +194,3 @@ class DatabaseModel(Dataclass, Protocol):
         :param conn: the connection to use
         :type conn: connection.Connection
         """
-        ...

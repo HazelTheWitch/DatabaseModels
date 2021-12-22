@@ -83,7 +83,6 @@ class ColumnType(ABC):
         :return: the Python object
         :rtype: Any
         """
-        ...
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         """
