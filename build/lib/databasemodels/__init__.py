@@ -10,4 +10,4 @@ from .version import *
 # TODO: Additional SQL parameter to createTable
 # TODO: Arrays of foreign keys
 
-version = Version(1, 3, 3)
+version = Version(1, 3, 4)

@@ -19,7 +19,7 @@ class Version:
         if self.major < 0 or self.minor < 0 or self.patch < 0:
             raise ValueError(f'Illegal Version Number ({self.major}.{self.minor}.{self.patch})')
 
-        if self.tag is not None and len(self.tag) == 0:
+        if self.tag == '':
             raise ValueError(f'Illegal Tag Value ({self.tag})')
 
     def __str__(self) -> str:

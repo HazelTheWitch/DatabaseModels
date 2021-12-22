@@ -2,11 +2,10 @@ import pickle
 
 from typing import Union, TYPE_CHECKING, Optional, Callable, Any, cast
 from typing_extensions import TypedDict
-from pathlib import Path
+from pathlib import Path, PurePath
 from psycopg import connect
 
 from functools import wraps
-from os import PathLike
 
 if TYPE_CHECKING:
     from psycopg import connection
@@ -32,9 +31,10 @@ class Login(TypedDict):
     port: int
 
 
+PathLike = Union[str, PurePath]
+
+
 def processPath(pathlike: PathLike) -> 'Path':
-    if isinstance(pathlike, Path):
-        return pathlike
     return Path(pathlike)
 
 

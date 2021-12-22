@@ -26,5 +26,5 @@ setup(
     ],
     author='Hazel Rella',
     author_email='hazelrella11@gmail.com',
-    url='https://github.com/HazelTheWitch/DatabaseModels'
+    url='https://github.com/HazelTheWitch/DatabaseModels',
 )
