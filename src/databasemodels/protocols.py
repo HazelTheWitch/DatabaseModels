@@ -143,7 +143,7 @@ class DatabaseModel(Dataclass, Protocol):
         """
 
     @classproperty
-    def primaryKeyColumn(cls) -> Optional['Column']:
+    def primaryKeyColumn(cls: Type['DatabaseModel']) -> Optional['Column']:
         """
         Get the primary key for this model or model type.
 

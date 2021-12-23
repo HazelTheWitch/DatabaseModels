@@ -1,4 +1,0 @@
-psycopg
-psycopg_binary
-iso8601
-typing_extensions
