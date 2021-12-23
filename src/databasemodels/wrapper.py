@@ -17,9 +17,11 @@ from .helper import classproperty
 
 
 class MutationContext:
-    def __init__(self, connection: 'connection.Connection[Any]', model: 'DatabaseModel') -> None:
+    def __init__(self, connection: 'connection.Connection[Any]', model: 'DatabaseModel',
+                 insertOrUpdateOnExit: bool) -> None:
         self.connection = connection
         self.model = model
+        self.insertOrUpdateOnExit = insertOrUpdateOnExit
 
         self.data: Dict[str, Any] = {}
 
@@ -29,13 +31,14 @@ class MutationContext:
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if exc_type is None:
-            self.model.insertOrUpdate(self.connection)
+            if self.insertOrUpdateOnExit:
+                self.model.insertOrUpdate(self.connection)
         else:
             for k, v in self.data.items():
                 setattr(self.model, k, v)
 
 
-def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
+def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useInstanceCache: bool = True) -> \
         Callable[[Type['Dataclass']], Type['DatabaseModel']]:
     def wrapped(cls: Union[Type['Dataclass'], Type[Any]]) -> Type['DatabaseModel']:
         if not isinstance(cls, Dataclass):
@@ -221,35 +224,45 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                             obj._create(conn, record)
 
+                            record = cur.fetchone()
+
                             yield obj
                         else:
                             primaryKey = cls.__primary_key__.type.convertDataFromString(conn, record[primaryKeyIndex])
 
-                            if primaryKey not in cls.__instance_cache__:
+                            if useInstanceCache and primaryKey in cls.__instance_cache__:
+                                obj = cls.__instance_cache__[primaryKey]
+                            else:
                                 obj = cls(*argsNames)
 
                                 obj._create(conn, record)
 
+                            if useInstanceCache:
                                 cls.__instance_cache__[primaryKey] = obj
 
-                            yield cls.__instance_cache__[primaryKey]
+                            record = cur.fetchone()
 
-                        record = cur.fetchone()
+                            yield obj
 
             @classmethod
             def instantiateFromPrimaryKey(cls, conn: 'connection.Connection[Any]', primaryKey: Any) -> 'DatabaseModel':
                 if cls.__primary_key__ is None:
                     raise PrimaryKeyError(f'Model {cls.__name__} has no primary key to instantiate from')
 
-                if primaryKey in cls.__instance_cache__:
+                if useInstanceCache and primaryKey in cls.__instance_cache__:
                     return cls.__instance_cache__[primaryKey]
 
-                return cls.instantiateAll(conn, sql.SQL('WHERE {} = {}').format(
+                obj = cls.instantiateOne(conn, sql.SQL('WHERE {} = {}').format(
                     sql.Identifier(cls.__primary_key__.name),
                     sql.Literal(primaryKey)
-                ))[0]
+                ))
 
-            def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+                if useInstanceCache:
+                    cls.__instance_cache__[primaryKey] = obj
+
+                return obj
+
+            def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
                 if doTypeConversion:
                     data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in self.columns if c.name in argsNames]
                 else:
@@ -281,10 +294,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
 
                     self._create(conn, record)
 
-                    if self.__primary_key__ is not None:
+                    if self.__primary_key__ is not None and useInstanceCache:
                         self.__instance_cache__[self.primaryKey] = self
 
-            def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+                return self
+
+            def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
                 primary = self.primaryKeyColumn
 
                 if primary is None:
@@ -310,13 +325,14 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 with conn.cursor() as cur:
                     cur.execute(updateStatement)
 
-            def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+                return self
+
+            def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
                 if self.primaryKeyColumn is None:
                     raise PrimaryKeyError('Can not insert/update a database model without a primary key.')
 
                 if self.primaryKey is None:
-                    self.insert(conn, doTypeConversion=doTypeConversion)
-                    return
+                    return self.insert(conn, doTypeConversion=doTypeConversion)
 
                 instances = WrappedClass.instantiateAll(conn, sql.SQL('WHERE {} = {}').format(
                     sql.Identifier(self.primaryKeyColumn.name),
@@ -324,12 +340,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None) -> \
                 ))
 
                 if len(instances) == 0:
-                    self.insert(conn, doTypeConversion=doTypeConversion)
+                    return self.insert(conn, doTypeConversion=doTypeConversion)
                 else:
-                    self.update(conn, doTypeConversion=doTypeConversion)
+                    return self.update(conn, doTypeConversion=doTypeConversion)
 
-            def mutate(self, conn: 'connection.Connection[Any]') -> ContextManager[None]:
-                return MutationContext(conn, self)
+            def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool) -> ContextManager[None]:
+                return MutationContext(conn, self, updateOnExit)
 
         miniLocals: Dict[str, Callable[..., None]] = {}
 

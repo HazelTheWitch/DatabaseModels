@@ -99,7 +99,7 @@ class DatabaseModel(Dataclass, Protocol):
         :rtype: DatabaseModel
         """
 
-    def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+    def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
         """
         Insert this model into the database.
 
@@ -109,7 +109,7 @@ class DatabaseModel(Dataclass, Protocol):
         :type doTypeConversion: bool
         """
 
-    def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+    def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
         """
         Update this model in the database, will replace any model currently in the database with the updated values.
         If there was not a row with the primary key this model has it will raise an error.
@@ -120,7 +120,7 @@ class DatabaseModel(Dataclass, Protocol):
         :type doTypeConversion: bool
         """
 
-    def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> None:
+    def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
         """
         Intelligently either updates or inserts this model into the database. If there was not a row with the primary
         key this model has it will insert it.
@@ -187,10 +187,12 @@ class DatabaseModel(Dataclass, Protocol):
         :rtype: List[Column]
         """
 
-    def mutate(self, conn: 'connection.Connection[Any]') -> ContextManager[None]:
+    def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool) -> ContextManager[None]:
         """
         Enter a context manager which inserts or updates the model at the end of it if no errors occurred
 
         :param conn: the connection to use
         :type conn: connection.Connection
+        :param updateOnExit: wether or not to update upon a successful update
+        :type updateOnExit: bool
         """

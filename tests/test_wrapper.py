@@ -24,7 +24,7 @@ class TestDecorator(ConnectionUnitTest):
     def setUp(self) -> None:
         super().setUp()
 
-        @dbm.model('unittests', 'fruits')
+        @dbm.model('unittests', 'fruits', useInstanceCache=False)
         @dataclass
         class Fruit:
             id: PrimaryKey[SERIAL] = AUTO_FILLED
@@ -34,12 +34,48 @@ class TestDecorator(ConnectionUnitTest):
 
         self.Fruit = Fruit
 
+        Fruit.createTable(self.conn, recreateTable=True)
+
     def test_creation(self) -> None:
         pear = self.Fruit('Pear', 3, 'yellow')
 
         self.assertEqual(pear.name, 'Pear')
         self.assertEqual(pear.weight, 3)
         self.assertEqual(pear.color, 'yellow')
+
+    def test_mutate(self) -> None:
+        pear = self.Fruit('Pear', 3, 'yellow')
+
+        with pear.mutate(self.conn, True):
+            pear.weight = 4
+
+        self.assertEqual(pear.weight, 4)
+        self.assertEqual(self.Fruit.instantiateFromPrimaryKey(self.conn, pear.id), pear)
+
+        with self.assertRaises(ValueError):
+            with pear.mutate(self.conn, True):
+                pear.weight = 5
+                raise ValueError
+
+        self.assertEqual(pear.weight, 4)
+        self.assertEqual(self.Fruit.instantiateFromPrimaryKey(self.conn, pear.id), pear)
+
+        with pear.mutate(self.conn, False):
+            pear.weight = 3
+
+        self.assertEqual(pear.weight, 3)
+        self.assertEqual(self.Fruit.instantiateFromPrimaryKey(self.conn, pear.id).weight, 4)
+
+        with pear.mutate(self.conn, True):
+            pear.weight = 3
+
+        with self.assertRaises(ValueError):
+            with pear.mutate(self.conn, False):
+                pear.weight = 5
+                raise ValueError
+
+        self.assertEqual(pear.weight, 3)
+        self.assertEqual(self.Fruit.instantiateFromPrimaryKey(self.conn, pear.id), pear)
 
 
 class TestGetters(unittest.TestCase):
@@ -98,6 +134,9 @@ class TestCreation(ConnectionUnitTest):
 
         self.Fruit = Fruit
         self.FruitBasket = FruitBasket
+
+        Fruit.createTable(self.conn, recreateTable=True)
+        FruitBasket.createTable(self.conn, recreateTable=True)
 
     def test_createTable(self) -> None:
         self.Fruit.createTable(self.conn, recreateTable=True)
