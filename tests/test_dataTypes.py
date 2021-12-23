@@ -29,7 +29,8 @@ class TestDatatypes(ConnectionUnitTest):
             id: PrimaryKey[SERIAL] = AUTO_FILLED
             integer: NotNull[INTEGER] = NO_DEFAULT
             real: NotNull[REAL] = NO_DEFAULT
-            numeric: NotNull[NUMERIC(6, 3)] = NO_DEFAULT
+            numeric1: NotNull[NUMERIC[6, 3]] = NO_DEFAULT
+            numeric2: NotNull[NUMERIC(6, 3)] = NO_DEFAULT
 
         self.Numeric = Numeric
 
@@ -38,8 +39,8 @@ class TestDatatypes(ConnectionUnitTest):
         class String:
             type: NotNull[EnumType[EnumExample]] = NO_DEFAULT
             text: NotNull[TEXT] = NO_DEFAULT
-            varchar: NotNull[VARCHAR(16)] = NO_DEFAULT
-            char: NotNull[CHAR(16)] = NO_DEFAULT
+            varchar: NotNull[VARCHAR[16]] = NO_DEFAULT
+            char: NotNull[CHAR[16]] = NO_DEFAULT
 
         self.String = String
 
@@ -66,7 +67,7 @@ class TestDatatypes(ConnectionUnitTest):
         Misc.createTable(self.conn, recreateTable=True)
 
     def test_numerics(self) -> None:
-        n0 = self.Numeric(1, 1.5, 123.456)
+        n0 = self.Numeric(1, 1.5, 123.456, 789.012)
 
         n0.insert(self.conn)
 
@@ -118,7 +119,7 @@ class TestArrays(ConnectionUnitTest):
         class Numeric:
             integer: NotNull[Array[INTEGER]] = NO_DEFAULT
             real: NotNull[Array[REAL]] = NO_DEFAULT
-            numeric: NotNull[Array[NUMERIC(6, 3)]] = NO_DEFAULT
+            numeric: NotNull[Array[NUMERIC[6, 3]]] = NO_DEFAULT
 
         self.Numeric = Numeric
 
@@ -127,8 +128,8 @@ class TestArrays(ConnectionUnitTest):
         class String:
             type: NotNull[Array[EnumType[EnumExample]]] = NO_DEFAULT
             text: NotNull[Array[TEXT]] = NO_DEFAULT
-            varchar: NotNull[Array[VARCHAR(16)]] = NO_DEFAULT
-            char: NotNull[Array[CHAR(16)]] = NO_DEFAULT
+            varchar: NotNull[Array[VARCHAR[16]]] = NO_DEFAULT
+            char: NotNull[Array[CHAR[16]]] = NO_DEFAULT
 
         self.String = String
 

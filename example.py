@@ -2,7 +2,6 @@ from src import databasemodels as dbm
 from src.databasemodels.datatypes import *
 from datetime import datetime
 
-
 from enum import Enum
 
 

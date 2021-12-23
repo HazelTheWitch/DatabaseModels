@@ -416,23 +416,44 @@ JSONB = LiteralType('JSONB', json.loads, json.dumps)
 BOOL = LiteralType('BOOLEAN', lambda s: s == 't', bool)
 
 
-def VARCHAR(n: int) -> 'LiteralType':
-    assert n > 0
+class VARCHAR(LiteralType):
+    def __init__(self, n: int, *, _fromGetItem: bool = False) -> None:
+        if not _fromGetItem:
+            warnings.warn('Use indexing instead of instantiation for VARCHAR types.', DeprecationWarning, 2)
 
-    return LiteralType(f'VARCHAR({n})', str, str)
+        assert n > 0
+
+        super().__init__(f'VARCHAR({n})', str, str)
+
+    def __class_getitem__(cls, n: int) -> 'VARCHAR':
+        return cls(n, _fromGetItem=True)
 
 
-def CHAR(n: int) -> 'LiteralType':
-    assert n > 0
+class CHAR(LiteralType):
+    def __init__(self, n: int, *, _fromGetItem: bool = False) -> None:
+        if not _fromGetItem:
+            warnings.warn('Use indexing instead of instantiation for CHAR types.', DeprecationWarning, 2)
 
-    return LiteralType(f'CHAR({n})', str, str)
+        assert n > 0
+
+        super().__init__(f'CHAR({n})', str, str)
+
+    def __class_getitem__(cls, n: int) -> 'CHAR':
+        return cls(n, _fromGetItem=True)
 
 
-def NUMERIC(precision: int, scale: int) -> 'LiteralType':
-    assert precision > 0
-    assert scale >= 0
+class NUMERIC(LiteralType):
+    def __init__(self, precision: int, scale: int, *, _fromGetItem: bool = False) -> None:
+        if not _fromGetItem:
+            warnings.warn('Use indexing instead of instantiation for NUMERIC types.', DeprecationWarning, 2)
 
-    return LiteralType(f'NUMERIC({precision}, {scale})', float, float)
+        assert precision > 0
+        assert scale >= 0
+
+        super().__init__(f'NUMERIC({precision}, {scale})', float, float)
+
+    def __class_getitem__(cls, args: Tuple[int, int]) -> 'LiteralType':
+        return cls(*args, _fromGetItem=True)
 
 
 datatypeModifiers = [

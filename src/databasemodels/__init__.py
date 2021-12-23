@@ -9,4 +9,4 @@ from .version import *
 # TODO: Implement Interval
 # TODO: Additional SQL parameter to createTable
 
-version = Version(1, 3, 7)
+version = Version(1, 4, 0)

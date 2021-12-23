@@ -43,12 +43,14 @@ Unique
 NotNull
 ```
 
+Models have a "mutate" context manager which allows you to modify the model safely while reverting the changes if an 
+error is raised.
+
 ## Planned Features
 
  - Interval type
  - Additional SQL parameter to createTable
  - Full documentation across all the module
  - Implementation of all types listed [here](https://www.postgresql.org/docs/12/datatype.html).
- - "Mutation" context managers for database model instances
  - Higher unittest coverage
  - Higher customizability with table creation and other database operations
