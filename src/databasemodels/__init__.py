@@ -8,6 +8,5 @@ from .version import *
 
 # TODO: Implement Interval
 # TODO: Additional SQL parameter to createTable
-# TODO: Arrays of foreign keys
 
 version = Version(1, 3, 7)

@@ -46,6 +46,7 @@ NotNull
 ## Planned Features
 
  - Interval type
+ - Additional SQL parameter to createTable
  - Full documentation across all the module
  - Implementation of all types listed [here](https://www.postgresql.org/docs/12/datatype.html).
  - "Mutation" context managers for database model instances
