@@ -3,3 +3,6 @@
 
 login.pkl
 
+/build/
+/dist/
+/src/databasemodels.egg-info/
