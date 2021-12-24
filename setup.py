@@ -27,14 +27,14 @@ setup(
     author='Hazel Rella',
     author_email='hazelrella11@gmail.com',
     url='https://github.com/HazelTheWitch/DatabaseModels',
-    license='GPLv3',
+    license='MIT',
     package_data={
         'databasemodels': ['py.typed']
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.7',
