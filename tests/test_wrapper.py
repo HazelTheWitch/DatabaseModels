@@ -77,6 +77,14 @@ class TestDecorator(ConnectionUnitTest):
         self.assertEqual(pear.weight, 3)
         self.assertEqual(self.Fruit.instantiateFromPrimaryKey(self.conn, pear.id), pear)
 
+    def test_delete(self) -> None:
+        apple = self.Fruit('Apple', 3, 'yellow')
+
+        apple.insert(self.conn)
+
+        self.assertTrue(apple.delete(self.conn))
+        self.assertFalse(apple.delete(self.conn))
+
 
 class TestGetters(unittest.TestCase):
     def setUp(self) -> None:

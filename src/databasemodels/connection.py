@@ -1,6 +1,6 @@
 import pickle
 
-from typing import Union, TYPE_CHECKING, Optional, Callable, Any, cast
+from typing import Union, TYPE_CHECKING, Optional, Callable, Any, cast, overload
 from typing_extensions import TypedDict
 from pathlib import Path, PurePath
 from psycopg import connect

@@ -131,6 +131,16 @@ class DatabaseModel(Dataclass, Protocol):
         :type doTypeConversion: bool
         """
 
+    def delete(self, conn: 'connection.Connection[Any]') -> bool:
+        """
+        Delete this model from the database and return whether or not it was deleted.
+
+        :param conn: the connection to use
+        :type conn: connection.Connection[Any]
+        :return: if the model was deleted
+        :rtype: bool
+        """
+
     @classmethod
     def getColumn(cls, name: str) -> 'Column':
         """

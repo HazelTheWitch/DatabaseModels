@@ -344,6 +344,25 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
                 else:
                     return self.update(conn, doTypeConversion=doTypeConversion)
 
+            def delete(self, conn: 'connection.Connection[Any]') -> bool:
+                if self.primaryKeyColumn is None:
+                    raise PrimaryKeyError('Can not delete a database model without a primary key.')
+
+                if self.primaryKey is None:  # Never was in the database so it was "deleted"
+                    return True
+
+                deleteStatement = sql.SQL('DELETE FROM {} WHERE {} = {} RETURNING {}').format(
+                    sql.Identifier(schemaName, tableName),
+                    sql.Identifier(self.primaryKeyColumn.name),
+                    sql.Literal(self.primaryKey),
+                    sql.Identifier(self.primaryKeyColumn.name)
+                )
+
+                with conn.cursor() as cur:
+                    cur.execute(deleteStatement)
+
+                    return cur.fetchone() is not None
+
             def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool) -> ContextManager[None]:
                 return MutationContext(conn, self, updateOnExit)
 
