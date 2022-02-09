@@ -150,9 +150,9 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
 
             @classmethod
             def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False,
-                            recreateTable: bool = False) -> None:
+                            recreateTable: bool = False, recreateColumns: bool = False) -> None:
                 for defini in cls.columns:
-                    defini.initialize(conn)
+                    defini.initialize(conn, recreateColumns)
 
                 createSchema = sql.SQL(
                     'CREATE SCHEMA IF NOT EXISTS {};'

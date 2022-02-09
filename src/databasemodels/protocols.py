@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     'Dataclass',
-    'DatabaseModel'
+    'DatabaseModel',
+    'Numeric'
 ]
 
 
@@ -34,7 +35,7 @@ class DatabaseModel(Dataclass, Protocol):
     __instance_cache__: Dict[Any, 'DatabaseModel']
 
     @classmethod
-    def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False, recreateTable: bool = False) -> None:
+    def createTable(cls, conn: 'connection.Connection[Any]', *, recreateSchema: bool = False, recreateTable: bool = False, recreateColumns: bool = False) -> None:
         """
         Create a table representing this class.
 
@@ -44,6 +45,8 @@ class DatabaseModel(Dataclass, Protocol):
         :type recreateSchema: bool
         :param recreateTable: if true it will drop the table before recreating it. This will drop any other tables that depend on it
         :type recreateTable: bool
+        :param recreateColumns: if true it will recreate any columns before creating the table.
+        :type recreateColumns: bool
         """
 
     @classmethod

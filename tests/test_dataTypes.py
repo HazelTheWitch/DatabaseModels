@@ -10,20 +10,21 @@ from helper import ConnectionUnitTest
 import datetime as dt
 import pytz
 
-from enum import Enum
+from enum import Enum, auto
 
 
 class EnumExample(Enum):
-    A = 1,
-    B = 2,
-    C = 3
+    A = auto()
+    B = auto()
+    C = auto()
+    D = auto()
 
 
 class TestDatatypes(ConnectionUnitTest):
     def setUp(self) -> None:
         super().setUp()
 
-        @dbm.model('unittests', 'numerictypes')
+        @dbm.model('unittests', 'numerictypes', useInstanceCache=False)
         @dataclass
         class Numeric:
             id: PrimaryKey[SERIAL] = AUTO_FILLED
@@ -62,7 +63,7 @@ class TestDatatypes(ConnectionUnitTest):
         self.Misc = Misc
 
         Numeric.createTable(self.conn, recreateTable=True)
-        String.createTable(self.conn, recreateTable=True)
+        String.createTable(self.conn, recreateTable=True, recreateColumns=True)
         Time.createTable(self.conn, recreateTable=True)
         Misc.createTable(self.conn, recreateTable=True)
 
@@ -71,7 +72,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         n0.insert(self.conn)
 
-        n1 = self.Numeric.instantiateAll(self.conn)[0]
+        n1 = self.Numeric.instantiateOne(self.conn)
 
         self.assertEqual(n0, n1)
 
@@ -80,7 +81,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         s0.insert(self.conn)
 
-        s1 = self.String.instantiateAll(self.conn)[0]
+        s1 = self.String.instantiateOne(self.conn)
 
         self.assertEqual(s0, s1)
 
@@ -96,7 +97,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         t0.insert(self.conn)
 
-        t1 = self.Time.instantiateAll(self.conn)[0]
+        t1 = self.Time.instantiateOne(self.conn)
 
         self.assertEqual(t0, t1)
 
@@ -105,7 +106,7 @@ class TestDatatypes(ConnectionUnitTest):
 
         m0.insert(self.conn)
 
-        m1 = self.Misc.instantiateAll(self.conn)[0]
+        m1 = self.Misc.instantiateOne(self.conn)
 
         self.assertEqual(m0, m1)
 
@@ -160,7 +161,7 @@ class TestArrays(ConnectionUnitTest):
 
         n0.insert(self.conn)
 
-        n1 = self.Numeric.instantiateAll(self.conn)[0]
+        n1 = self.Numeric.instantiateOne(self.conn)
 
         self.assertEqual(n0, n1)
 
@@ -169,7 +170,7 @@ class TestArrays(ConnectionUnitTest):
 
         s0.insert(self.conn)
 
-        s1 = self.String.instantiateAll(self.conn)[0]
+        s1 = self.String.instantiateOne(self.conn)
 
         self.assertEqual(s0, s1)
 
@@ -185,7 +186,7 @@ class TestArrays(ConnectionUnitTest):
 
         t0.insert(self.conn)
 
-        t1 = self.Time.instantiateAll(self.conn)[0]
+        t1 = self.Time.instantiateOne(self.conn)
 
         self.assertEqual(t0, t1)
 
@@ -194,7 +195,16 @@ class TestArrays(ConnectionUnitTest):
 
         m0.insert(self.conn)
 
-        m1 = self.Misc.instantiateAll(self.conn)[0]
+        m1 = self.Misc.instantiateOne(self.conn)
+
+        self.assertEqual(m0, m1)
+
+    def test_emptyarrays(self) -> None:
+        m0 = self.Misc([])
+
+        m0.insert(self.conn)
+
+        m1 = self.Misc.instantiateOne(self.conn)
 
         self.assertEqual(m0, m1)
 
@@ -229,7 +239,7 @@ class TestMultiArrays(ConnectionUnitTest):
 
         multi.insert(self.conn)
 
-        other = self.MultiArray.instantiateAll(self.conn)[0]
+        other = self.MultiArray.instantiateOne(self.conn)
 
         self.assertEqual(multi, other)
 
@@ -252,7 +262,7 @@ class TestComposites(ConnectionUnitTest):
 
         c0.insert(self.conn)
 
-        c1 = self.CompositeTypes.instantiateAll(self.conn)[0]
+        c1 = self.CompositeTypes.instantiateOne(self.conn)
 
         self.assertEqual(c0, c1)
         self.assertNotEqual(c0, self.CompositeTypes((2.0, 3.0)))

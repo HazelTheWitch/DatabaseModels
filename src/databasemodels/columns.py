@@ -23,8 +23,8 @@ class Column:
         self.name = name
         self.type = type
 
-    def initialize(self, conn: 'connection.Connection[Any]') -> None:
-        self.type.initializeType(conn)
+    def initialize(self, conn: 'connection.Connection[Any]', recreateColumns: bool = False) -> None:
+        self.type.initializeType(conn, recreateColumns)
 
     @property
     def columnDefinition(self) -> 'sql.Composable':
@@ -67,7 +67,7 @@ class ColumnType(ABC):
         ...
 
     @abstractmethod
-    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
+    def initializeType(self, conn: 'connection.Connection[Any]', recreate: bool) -> None:
         ...
 
     @abstractmethod

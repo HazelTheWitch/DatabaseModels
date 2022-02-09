@@ -8,5 +8,6 @@ from .version import *
 
 # TODO: Implement Interval
 # TODO: Additional SQL parameter to createTable
+# TODO: Implement Fixed Point number type for numeric type
 
-version = Version(1, 7, 0)
+version = Version(1, 8, 0)

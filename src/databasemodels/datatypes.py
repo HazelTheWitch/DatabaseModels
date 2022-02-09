@@ -34,7 +34,6 @@ __all__ = [
     'TIMESTAMP_WITH_TIMEZONE',
     'DATE',
     'TIME',
-    # 'INTERVAL',
 
     'JSON',
     'JSONB',
@@ -76,7 +75,7 @@ class ForeignKey(ColumnType):
             return cls(key, key.__schema_name__, key.__table_name__, key.__primary_key__)
         return cls(key[0], key[0].__schema_name__, key[0].__table_name__, key[0].getColumn(key[1]))
 
-    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
+    def initializeType(self, conn: 'connection.Connection[Any]', recreate: bool) -> None:
         pass
 
     @property
@@ -132,24 +131,31 @@ class Composite(ColumnType):
     def rawType(self) -> str:
         return self.name
 
-    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
-        conn.execute(
-            sql.SQL("""
-            DO $$ BEGIN
-                CREATE TYPE {} AS ({});
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-            """).format(
-                sql.Identifier(self.name),
-                sql.SQL(', ').join([
-                    sql.SQL('{} {}').format(
-                        sql.Identifier(name),
-                        column.typeStatement
-                    ) for name, column in self.fields
-                ])
+    def initializeType(self, conn: 'connection.Connection[Any]', recreate: bool) -> None:
+        with conn.cursor() as cur:
+            if recreate:
+                dropStatement = sql.SQL('DROP TYPE IF EXISTS {} CASCADE;').format(
+                    sql.Identifier(self.name)
+                )
+                cur.execute(dropStatement)
+
+            cur.execute(
+                sql.SQL("""
+                DO $$ BEGIN
+                    CREATE TYPE {} AS ({});
+                EXCEPTION
+                    WHEN duplicate_object THEN null;
+                END $$;
+                """).format(
+                    sql.Identifier(self.name),
+                    sql.SQL(', ').join([
+                        sql.SQL('{} {}').format(
+                            sql.Identifier(name),
+                            column.typeStatement
+                        ) for name, column in self.fields
+                    ])
+                )
             )
-        )
 
     def convertDataFromString(self, conn: 'connection.Connection[Any]', string: Optional[str]) -> Any:
         columns = (c for _, c in self.fields)
@@ -171,8 +177,8 @@ class ModifiedColumnType(ColumnType, ABC):
     def typeStatement(self) -> 'sql.Composable':
         return self.type.typeStatement
 
-    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
-        self.type.initializeType(conn)
+    def initializeType(self, conn: 'connection.Connection[Any]', recreate: bool) -> None:
+        self.type.initializeType(conn, recreate)
 
     @property
     def rawType(self) -> str:
@@ -301,7 +307,7 @@ class LiteralType(ColumnType):
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL(self.type)
 
-    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
+    def initializeType(self, conn: 'connection.Connection[Any]', recreate: bool) -> None:
         pass
 
     @property
@@ -342,8 +348,14 @@ class EnumType(ColumnType):
     def typeStatement(self) -> 'sql.Composable':
         return sql.SQL(self.type)
 
-    def initializeType(self, conn: 'connection.Connection[Any]') -> None:
+    def initializeType(self, conn: 'connection.Connection[Any]', recreate: bool) -> None:
         with conn.cursor() as cur:
+            if recreate:
+                dropStatement = sql.SQL('DROP TYPE IF EXISTS {} CASCADE;').format(
+                    sql.Identifier(self.type)
+                )
+                cur.execute(dropStatement)
+
             statement = sql.SQL('''
             DO $$ BEGIN
                 CREATE TYPE {} AS ENUM ({});
@@ -450,7 +462,7 @@ class NUMERIC(LiteralType):
         assert precision > 0
         assert scale >= 0
 
-        super().__init__(f'NUMERIC({precision}, {scale})', float, float)
+        super().__init__(f'NUMERIC({precision}, {scale})', str, str)
 
     def __class_getitem__(cls, args: Tuple[int, int]) -> 'LiteralType':
         return cls(*args, _fromGetItem=True)
