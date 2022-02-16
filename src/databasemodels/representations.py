@@ -1,5 +1,5 @@
 import re
-from typing import Optional, overload, Union
+from typing import Optional, overload, Union, cast
 
 from .exceptions import FixedPointOverflowError, FixedPointError, FixedPointUnderflowError
 
@@ -52,14 +52,14 @@ class FixedPointValue:
             if len(integer + decimal + '0' * (scale - len(decimal))) > precision:
                 raise FixedPointError(f'Invalid number for given scale and precision: {value}')
 
-            self._value = sign * int(integer + decimal + '0' * (scale - len(decimal)))
+            self._value: int = sign * int(integer + decimal + '0' * (scale - len(decimal)))
         elif type(value) == int:
-            self._value = value
+            self._value: int = value  # type: ignore
 
-        if precision < 1:
+        if precision is None or precision < 1:
             raise FixedPointError('Invalid precision')
 
-        if scale < 0:
+        if scale is None or scale < 0:
             raise FixedPointError('Invalid scale')
 
         self.precision = precision
@@ -76,7 +76,7 @@ class FixedPointValue:
         return self.precision == other.precision and self.scale == other.scale
 
     def __float__(self) -> float:
-        return self._value * self._scaleFactor
+        return self._value * self._scaleFactor  # type: ignore
 
     def __str__(self) -> str:
         representation = str(self._value)
@@ -84,7 +84,7 @@ class FixedPointValue:
         representation = representation[:self._lscale] + '.' + representation[self._lscale:]
         return representation.strip('0.')
 
-    def __eq__(self, other: NUMERIC_VALUE) -> bool:
+    def __eq__(self, other: object) -> bool:
         if type(other) == int or type(other) == float:
             return float(self) == other
         elif isinstance(other, FixedPointValue):
@@ -94,6 +94,8 @@ class FixedPointValue:
     def __add__(self, other: NUMERIC_VALUE) -> 'FixedPointValue':
         if type(other) == int or type(other) == float:
             other = FixedPointValue(str(other), self.precision, self.scale)
+
+        other = cast('FixedPointValue', other)
 
         if not self._compatible(other):
             other = other.changePrecisionAndScale(self.precision, self.scale)
@@ -115,6 +117,8 @@ class FixedPointValue:
         if type(other) == int or type(other) == float:
             other = FixedPointValue(str(other), self.precision, self.scale)
 
+        other = cast('FixedPointValue', other)
+
         if not self._compatible(other):
             other = other.changePrecisionAndScale(self.precision, self.scale)
 
@@ -131,6 +135,8 @@ class FixedPointValue:
     def divide(self, other: NUMERIC_VALUE, newScale: int) -> 'FixedPointValue':
         if type(other) == int or type(other) == float:
             other = FixedPointValue(str(other), self.precision, self.scale)
+
+        other = cast('FixedPointValue', other)
 
         dividend = self.changeScale(newScale)
 

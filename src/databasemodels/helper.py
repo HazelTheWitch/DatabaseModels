@@ -1,5 +1,5 @@
 import ast
-from typing import Callable, Any, Optional, Type, TypeVar, List, Union
+from typing import Callable, Any, Optional, Type, TypeVar, List, Union, cast
 from functools import wraps
 
 __all__ = [
@@ -36,7 +36,7 @@ class classproperty:
         return self.func(owner)
 
 
-def splitNestedString(arraystring: Optional[Union[str, list]]) -> List[str]:
+def splitNestedString(arraystring: Optional[Union[str, List[str]]]) -> List[str]:
     """Parses a string from psycopg array/composite type into a list"""
     # Return empty list for null values
     if arraystring is None:
@@ -44,6 +44,8 @@ def splitNestedString(arraystring: Optional[Union[str, list]]) -> List[str]:
 
     if type(arraystring) == list:
         return arraystring
+
+    arraystring = cast(str, arraystring)
 
     itemstring = arraystring[1:-1]  # Cut off {}
 
