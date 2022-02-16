@@ -3,11 +3,13 @@ import json
 import warnings
 from abc import ABC
 from enum import Enum
+from functools import partial
 from typing import TYPE_CHECKING, Any, Union, Tuple, Optional, Callable, cast, Type
 
 from iso8601 import parse_date
 from psycopg import sql
 
+from .representations import FixedPointValue
 from .columns import ColumnType, Column
 from .exceptions import PrimaryKeyError, NullValueError, EnumValueError, ArrayLengthWarning
 from .helper import acceptNone, splitNestedString
@@ -462,7 +464,7 @@ class NUMERIC(LiteralType):
         assert precision > 0
         assert scale >= 0
 
-        super().__init__(f'NUMERIC({precision}, {scale})', str, str)
+        super().__init__(f'NUMERIC({precision}, {scale})', partial(FixedPointValue, precision=precision, scale=scale), str)
 
     def __class_getitem__(cls, args: Tuple[int, int]) -> 'LiteralType':
         return cls(*args, _fromGetItem=True)

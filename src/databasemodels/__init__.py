@@ -5,9 +5,9 @@ from .columns import *
 from .protocols import *
 from .exceptions import *
 from .version import *
+from .representations import *
 
 # TODO: Implement Interval
 # TODO: Additional SQL parameter to createTable
-# TODO: Implement Fixed Point number type for numeric type
 
-version = Version(1, 8, 0)
+version = Version(1, 9, 0)

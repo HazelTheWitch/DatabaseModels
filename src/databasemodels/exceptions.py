@@ -5,7 +5,10 @@ __all__ = [
     'EnumValueError',
     'FieldDefaultValueError',
     'DBModelWarning',
-    'ArrayLengthWarning'
+    'ArrayLengthWarning',
+    'FixedPointError',
+    'FixedPointOverflowError',
+    'FixedPointUnderflowError',
 ]
 
 
@@ -35,3 +38,21 @@ class DBModelWarning(RuntimeWarning):
 
 class ArrayLengthWarning(DBModelWarning):
     ...
+
+
+class FixedPointError(RuntimeError):
+    ...
+
+
+class FixedPointOverflowError(FixedPointError):
+    def __init__(self, value: int, maxValue: int) -> None:
+        super().__init__(f'{value} >= {maxValue}')
+        self.value = value
+        self.maxValue = maxValue
+
+
+class FixedPointUnderflowError(FixedPointError):
+    def __init__(self, value: int, minValue: int) -> None:
+        super().__init__(f'{value} <= {minValue}')
+        self.value = value
+        self.maxValue = minValue
