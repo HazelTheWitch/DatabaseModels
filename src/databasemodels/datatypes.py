@@ -114,7 +114,7 @@ class ForeignKey(ColumnType):
 
 class Composite(ColumnType):
     """
-    Creates a composite postgres type.
+    Creates a composite postgresql type.
     """
 
     def __init__(self, name: str, fields: Tuple[Tuple[str, 'ColumnType'], ...]) -> None:
