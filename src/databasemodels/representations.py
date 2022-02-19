@@ -17,18 +17,21 @@ NUMERIC_VALUE = Union[int, float, 'FixedPointValue']
 
 class FixedPointValue:
     @overload
-    def __init__(self, value: str) -> None:
+    def __init__(self, value: Union[str, float]) -> None:
         ...
 
     @overload
-    def __init__(self, value: Union[str, int], precision: int, scale: int) -> None:
+    def __init__(self, value: Union[str, float, int], precision: int, scale: int) -> None:
         ...
 
-    def __init__(self, value: Union[str, int], precision: Optional[int] = None, scale: Optional[int] = None) -> None:
+    def __init__(self, value: Union[str, float, int], precision: Optional[int] = None, scale: Optional[int] = None) -> None:
         nones = (1 if precision is None else 0) + (1 if scale is None else 0)
 
         if nones == 1:
             raise ValueError('Please call one of the overloaded init methods.')
+
+        if type(value) == float:
+            value = str(round(value, scale))
 
         if type(value) == str:
             match = VALUE_REGEX.match(value)
