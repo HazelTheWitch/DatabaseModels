@@ -5,23 +5,24 @@ from typing import Callable, Any, List, Type, Optional, OrderedDict, Dict, Gener
 
 from psycopg import connection, sql
 
-__all__ = [
-    'model',
-]
-
 from .datatypes import NO_DEFAULT, AUTO_FILLED
 from .columns import Column
 from .exceptions import PrimaryKeyError, FieldDefaultValueError
 from .protocols import Dataclass, DatabaseModel
 from .helper import classproperty
 
+__all__ = [
+    'model',
+]
+
 
 class MutationContext:
     def __init__(self, connection: 'connection.Connection[Any]', model: 'DatabaseModel',
-                 insertOrUpdateOnExit: bool) -> None:
+                 insertOrUpdateOnExit: bool, commitAfter: bool) -> None:
         self.connection = connection
         self.model = model
         self.insertOrUpdateOnExit = insertOrUpdateOnExit
+        self.commitAfter = commitAfter
 
         self.data: Dict[str, Any] = {}
 
@@ -32,7 +33,7 @@ class MutationContext:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if exc_type is None:
             if self.insertOrUpdateOnExit:
-                self.model.insertOrUpdate(self.connection)
+                self.model.insertOrUpdate(self.connection, commitAfter=self.commitAfter)
         else:
             for k, v in self.data.items():
                 setattr(self.model, k, v)
@@ -67,7 +68,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
             definition = Column.fromField(field)
 
             allFieldsName.append(field.name)
-            if field.default is not AUTO_FILLED:
+            if field.default is None or field.default is NO_DEFAULT:
                 argsNames.append(field.name)
 
             columnDefinitions[definition.name] = definition
@@ -262,7 +263,7 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
 
                 return obj
 
-            def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
+            def insert(self, conn: 'connection.Connection[Any]', commitAfter: bool = False, *, doTypeConversion: bool = True) -> 'DatabaseModel':
                 if doTypeConversion:
                     data = [c.type.convertInsertableFromData(conn, getattr(self, c.name)) for c in self.columns if c.name in argsNames]
                 else:
@@ -297,9 +298,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
                     if self.__primary_key__ is not None and useInstanceCache:
                         self.__instance_cache__[self.primaryKey] = self
 
+                if commitAfter:
+                    conn.commit()
+
                 return self
 
-            def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
+            def update(self, conn: 'connection.Connection[Any]', commitAfter: bool = False, *, doTypeConversion: bool = True) -> 'DatabaseModel':
                 primary = self.primaryKeyColumn
 
                 if primary is None:
@@ -325,9 +329,12 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
                 with conn.cursor() as cur:
                     cur.execute(updateStatement)
 
+                if commitAfter:
+                    conn.commit()
+
                 return self
 
-            def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
+            def insertOrUpdate(self, conn: 'connection.Connection[Any]', commitAfter: bool = False, *, doTypeConversion: bool = True) -> 'DatabaseModel':
                 if self.primaryKeyColumn is None:
                     raise PrimaryKeyError('Can not insert/update a database model without a primary key.')
 
@@ -340,11 +347,11 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
                 ))
 
                 if len(instances) == 0:
-                    return self.insert(conn, doTypeConversion=doTypeConversion)
+                    return self.insert(conn, commitAfter=commitAfter, doTypeConversion=doTypeConversion)
                 else:
-                    return self.update(conn, doTypeConversion=doTypeConversion)
+                    return self.update(conn, commitAfter=commitAfter, doTypeConversion=doTypeConversion)
 
-            def delete(self, conn: 'connection.Connection[Any]') -> bool:
+            def delete(self, conn: 'connection.Connection[Any]', commitAfter: bool = False) -> bool:
                 if self.primaryKeyColumn is None:
                     raise PrimaryKeyError('Can not delete a database model without a primary key.')
 
@@ -361,10 +368,15 @@ def model(_schema: Optional[str] = None, _table: Optional[str] = None, *, useIns
                 with conn.cursor() as cur:
                     cur.execute(deleteStatement)
 
-                    return cur.fetchone() is not None
+                    returnValue = cur.fetchone() is not None
 
-            def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool) -> ContextManager[None]:
-                return MutationContext(conn, self, updateOnExit)
+                if commitAfter:
+                    conn.commit()
+
+                return returnValue
+
+            def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool, commitAfter: bool = False) -> ContextManager[None]:
+                return MutationContext(conn, self, updateOnExit, commitAfter)
 
         miniLocals: Dict[str, Callable[..., None]] = {}
 

@@ -101,7 +101,7 @@ class DatabaseModel(Dataclass, Protocol):
         :rtype: DatabaseModel
         """
 
-    def insert(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
+    def insert(self, conn: 'connection.Connection[Any]', commitAfter: bool = False, *, doTypeConversion: bool = True) -> 'DatabaseModel':
         """
         Insert this model into the database.
 
@@ -109,9 +109,11 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
+        :param commitAfter: whether or not to commit to the database after
+        :type commitAfter: bool
         """
 
-    def update(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
+    def update(self, conn: 'connection.Connection[Any]', commitAfter: bool = False, *, doTypeConversion: bool = True) -> 'DatabaseModel':
         """
         Update this model in the database, will replace any model currently in the database with the updated values.
         If there was not a row with the primary key this model has it will raise an error.
@@ -120,9 +122,11 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
+        :param commitAfter: whether or not to commit to the database after
+        :type commitAfter: bool
         """
 
-    def insertOrUpdate(self, conn: 'connection.Connection[Any]', *, doTypeConversion: bool = True) -> 'DatabaseModel':
+    def insertOrUpdate(self, conn: 'connection.Connection[Any]', commitAfter: bool = False, *, doTypeConversion: bool = True) -> 'DatabaseModel':
         """
         Intelligently either updates or inserts this model into the database. If there was not a row with the primary
         key this model has it will insert it.
@@ -131,9 +135,11 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
+        :param commitAfter: whether or not to commit to the database after
+        :type commitAfter: bool
         """
 
-    def delete(self, conn: 'connection.Connection[Any]') -> bool:
+    def delete(self, conn: 'connection.Connection[Any]', commitAfter: bool = False) -> bool:
         """
         Delete this model from the database and return whether or not it was deleted.
 
@@ -141,6 +147,8 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :return: if the model was deleted
         :rtype: bool
+        :param commitAfter: whether or not to commit to the database after
+        :type commitAfter: bool
         """
 
     @classmethod
@@ -199,12 +207,14 @@ class DatabaseModel(Dataclass, Protocol):
         :rtype: List[Column]
         """
 
-    def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool) -> ContextManager[None]:
+    def mutate(self, conn: 'connection.Connection[Any]', updateOnExit: bool, commitAfter: bool = False) -> ContextManager[None]:
         """
         Enter a context manager which inserts or updates the model at the end of it if no errors occurred
 
         :param conn: the connection to use
         :type conn: connection.Connection
-        :param updateOnExit: wether or not to update upon a successful update
+        :param updateOnExit: whether or not to update upon a successful update
         :type updateOnExit: bool
+        :param commitAfter: whether or not to commit to the database after a successful exit
+        :type commitAfter: bool
         """
