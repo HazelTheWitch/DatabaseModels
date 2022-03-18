@@ -109,7 +109,7 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
-        :param commitAfter: whether or not to commit to the database after
+        :param commitAfter: whether to commit to the database after
         :type commitAfter: bool
         """
 
@@ -122,7 +122,7 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
-        :param commitAfter: whether or not to commit to the database after
+        :param commitAfter: whether to commit to the database after
         :type commitAfter: bool
         """
 
@@ -135,7 +135,7 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :param doTypeConversion: if true a conversion function will be called on each field
         :type doTypeConversion: bool
-        :param commitAfter: whether or not to commit to the database after
+        :param commitAfter: whether to commit to the database after
         :type commitAfter: bool
         """
 
@@ -147,7 +147,7 @@ class DatabaseModel(Dataclass, Protocol):
         :type conn: connection.Connection[Any]
         :return: if the model was deleted
         :rtype: bool
-        :param commitAfter: whether or not to commit to the database after
+        :param commitAfter: whether to commit to the database after
         :type commitAfter: bool
         """
 
@@ -213,8 +213,8 @@ class DatabaseModel(Dataclass, Protocol):
 
         :param conn: the connection to use
         :type conn: connection.Connection
-        :param updateOnExit: whether or not to update upon a successful update
+        :param updateOnExit: whether to update upon a successful update
         :type updateOnExit: bool
-        :param commitAfter: whether or not to commit to the database after a successful exit
+        :param commitAfter: whether to commit to the database after a successful exit
         :type commitAfter: bool
         """

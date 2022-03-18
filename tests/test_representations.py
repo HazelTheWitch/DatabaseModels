@@ -32,6 +32,26 @@ class TestFixedPoint(unittest.TestCase):
         self.assertEqual(f2._minValue, -1000000)
         self.assertEqual(f2._maxValue, 1000000)
 
+        f3 = dbm.FixedPointValue(123.456)
+
+        self.assertEqual(f3.precision, 6)
+        self.assertEqual(f3.scale, 3)
+        self.assertEqual(f3._value, 123456)
+        self.assertEqual(f3._scaleFactor, 0.001)
+        self.assertEqual(f3._minValue, -1000000)
+        self.assertEqual(f3._maxValue, 1000000)
+
+        f4 = dbm.FixedPointValue(123.456, 16, 8)
+
+        self.assertEqual(f4.precision, 16)
+        self.assertEqual(f4.scale, 8)
+        self.assertEqual(f4._value, 12345600000)
+        self.assertEqual(f4._scaleFactor, 1 / 10 ** 8)
+        self.assertEqual(f4._minValue, -(10 ** 16))
+        self.assertEqual(f4._maxValue, 10 ** 16)
+
+
+
     def test_str(self):
         f0 = dbm.FixedPointValue('123.456')
 

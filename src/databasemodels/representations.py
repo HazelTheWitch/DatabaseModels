@@ -31,7 +31,10 @@ class FixedPointValue:
             raise ValueError('Please call one of the overloaded init methods.')
 
         if type(value) == float:
-            value = str(round(value, scale))
+            if scale is not None:
+                value = str(round(value, scale))
+            else:
+                value = str(value)
 
         if type(value) == str:
             match = VALUE_REGEX.match(value)

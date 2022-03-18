@@ -248,24 +248,79 @@ class TestComposites(ConnectionUnitTest):
     def setUp(self) -> None:
         super().setUp()
 
+        @dbm.model('unittests', 'compositeforeign')
+        @dataclass
+        class CompositeForeign:
+            id: PrimaryKey[SERIAL] = AUTO_FILLED
+            boolean: NotNull[BOOL] = NO_DEFAULT
+
         @dbm.model('unittests', 'multiarray')
         @dataclass
         class CompositeTypes:
             complexNumber: Composite['complex', (('r', REAL), ('i', REAL))] = NO_DEFAULT
+            arrayOfComplex: Array[Composite['complex', (('r', REAL), ('i', REAL))]] = NO_DEFAULT
+            foreign: Composite['example', (('f', FalseForeignKey[CompositeForeign]), ('x', REAL))] = NO_DEFAULT
 
         self.CompositeTypes = CompositeTypes
+        self.CompositeForeign = CompositeForeign
 
-        CompositeTypes.createTable(self.conn, recreateTable=True)
+        CompositeForeign.createTable(self.conn, recreateTable=True)
+        CompositeTypes.createTable(self.conn, recreateTable=True, recreateColumns=True)
 
     def test_composites(self) -> None:
-        c0 = self.CompositeTypes((1.0, 2.0))
+        cf = self.CompositeForeign(False)
+
+        c0 = self.CompositeTypes((1.0, 2.0), [(1.0, 2.0), (3.0, 4.0)], (cf, 1.0))
 
         c0.insert(self.conn)
 
         c1 = self.CompositeTypes.instantiateOne(self.conn)
 
         self.assertEqual(c0, c1)
-        self.assertNotEqual(c0, self.CompositeTypes((2.0, 3.0)))
+        self.assertNotEqual(c0, self.CompositeTypes((2.0, 3.0), [(1.0, 2.0), (3.0, 4.0)], (cf, 1.0)))
+
+
+class TestForeignKeys(ConnectionUnitTest):
+    def setUp(self) -> None:
+        super().setUp()
+
+        @dbm.model('unittests', 'A')
+        @dataclass
+        class A:
+            id: PrimaryKey[SERIAL] = AUTO_FILLED
+            a: INTEGER = NO_DEFAULT
+
+        @dbm.model('unittests', 'B')
+        @dataclass
+        class B:
+            id: PrimaryKey[SERIAL] = AUTO_FILLED
+            b: INTEGER = NO_DEFAULT
+
+        @dbm.model('unittests', 'C')
+        @dataclass
+        class C:
+            id: PrimaryKey[SERIAL] = AUTO_FILLED
+            a: ForeignKey[A] = NO_DEFAULT
+            b: FalseForeignKey[B] = NO_DEFAULT
+            bs: Array[FalseForeignKey[B]] = NO_DEFAULT
+
+        self.A = A
+        self.B = B
+        self.C = C
+
+        A.createTable(self.conn, recreateTable=True)
+        B.createTable(self.conn, recreateTable=True)
+        C.createTable(self.conn, recreateTable=True)
+
+    def test_foreignKey(self) -> None:
+        a, b0, b1 = self.A(1), self.B(2), self.B(3)
+        c0 = self.C(a, b0, [b0, b1])
+
+        c0.insert(self.conn)
+
+        c1 = self.C.instantiateOne(self.conn)
+
+        self.assertEqual(c0, c1)
 
 
 if __name__ == '__main__':

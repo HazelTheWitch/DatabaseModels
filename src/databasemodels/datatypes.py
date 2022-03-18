@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     'ForeignKey',
+    'FalseForeignKey',
     'Composite',
     'PrimaryKey',
     'Unique',
@@ -112,6 +113,17 @@ class ForeignKey(ColumnType):
         return f'{self.rawType} REFERENCES "{self.schema}"."{self.table}" ({self.column.name})'
 
 
+class FalseForeignKey(ForeignKey):
+    """
+    Defines a column to be a foreign key to a different model without technically requiring the restriction. Allows
+    for arrays and composite types of foreign keys.
+    """
+
+    @property
+    def typeStatement(self) -> 'sql.Composable':
+        return sql.SQL(self._rawType)
+
+
 class Composite(ColumnType):
     """
     Creates a composite postgresql type.
@@ -141,6 +153,24 @@ class Composite(ColumnType):
                 )
                 cur.execute(dropStatement)
 
+            S = sql.SQL("""
+                DO $$ BEGIN
+                    CREATE TYPE {} AS ({});
+                EXCEPTION
+                    WHEN duplicate_object THEN null;
+                END $$;
+                """).format(
+                    sql.Identifier(self.name),
+                    sql.SQL(', ').join([
+                        sql.SQL('{} {}').format(
+                            sql.Identifier(name),
+                            column.typeStatement
+                        ) for name, column in self.fields
+                    ])
+                )
+
+            print(S.as_string(conn))
+
             cur.execute(
                 sql.SQL("""
                 DO $$ BEGIN
@@ -165,7 +195,11 @@ class Composite(ColumnType):
         return tuple(c.convertDataFromString(conn, i) for c, i in zip(columns, splitNestedString(string)))
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
-        return data
+        dataTuple = cast(Tuple[Any], data)
+
+        columns = (c for _, c in self.fields)
+
+        return tuple(c.convertInsertableFromData(conn, i) for c, i in zip(columns, dataTuple))
 
 
 class ModifiedColumnType(ColumnType, ABC):
