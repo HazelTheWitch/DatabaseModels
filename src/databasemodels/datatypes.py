@@ -98,11 +98,17 @@ class ForeignKey(ColumnType):
         if self.model.__primary_key__ is None:
             raise PrimaryKeyError(f'{self.model} contains no primary key')
 
+        if string is None:
+            return None
+
         return self.model.instantiateFromPrimaryKey(conn, string)
 
     def convertInsertableFromData(self, conn: 'connection.Connection[Any]', data: Any) -> Any:
         if self.model.__primary_key__ is None:
             raise PrimaryKeyError(f'{self.model} contains no primary key')
+
+        if data is None:
+            return None
 
         # Data will be of type self.model so we can get the primary key of data and return it
         data.insertOrUpdate(conn)
@@ -152,24 +158,6 @@ class Composite(ColumnType):
                     sql.Identifier(self.name)
                 )
                 cur.execute(dropStatement)
-
-            S = sql.SQL("""
-                DO $$ BEGIN
-                    CREATE TYPE {} AS ({});
-                EXCEPTION
-                    WHEN duplicate_object THEN null;
-                END $$;
-                """).format(
-                    sql.Identifier(self.name),
-                    sql.SQL(', ').join([
-                        sql.SQL('{} {}').format(
-                            sql.Identifier(name),
-                            column.typeStatement
-                        ) for name, column in self.fields
-                    ])
-                )
-
-            print(S.as_string(conn))
 
             cur.execute(
                 sql.SQL("""

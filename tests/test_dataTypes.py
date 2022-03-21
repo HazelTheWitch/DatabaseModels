@@ -322,6 +322,15 @@ class TestForeignKeys(ConnectionUnitTest):
 
         self.assertEqual(c0, c1)
 
+    def test_noneForeignKey(self) -> None:
+        c0 = self.C(None, None, [None, None])
+
+        c0.insert(self.conn)
+
+        c1 = self.C.instantiateOne(self.conn)
+
+        self.assertEqual(c0, c1)
+
 
 if __name__ == '__main__':
     unittest.main()

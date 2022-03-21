@@ -10,4 +10,4 @@ from .representations import *
 # TODO: Implement Interval
 # TODO: Additional SQL parameter to createTable
 
-version = Version(1, 9, 0)
+version = Version(1, 11, 1)
